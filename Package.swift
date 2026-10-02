@@ -1,5 +1,16 @@
 // swift-tools-version: 6.0
+import Foundation
 import PackageDescription
+
+// With Command Line Tools only (no Xcode), SwiftPM intermittently omits the Swift Testing
+// macro plugin path, failing with "plugin for module 'TestingMacros' not found".
+// Pass it explicitly in that setup.
+let cltTestingPlugins = "/Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/testing"
+let testSwiftSettings: [SwiftSetting] =
+    FileManager.default.fileExists(atPath: "/Applications/Xcode.app")
+        || !FileManager.default.fileExists(atPath: cltTestingPlugins)
+    ? []
+    : [.unsafeFlags(["-plugin-path", cltTestingPlugins])]
 
 let package = Package(
     name: "Lumen",
@@ -15,7 +26,8 @@ let package = Package(
         ),
         .testTarget(
             name: "LumenCoreTests",
-            dependencies: ["LumenCore"]
+            dependencies: ["LumenCore"],
+            swiftSettings: testSwiftSettings
         ),
     ]
 )

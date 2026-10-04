@@ -62,7 +62,7 @@ struct MenuBarView: View {
         .accessibilityLabel(label)
     }
 
-    private func toggle(_ title: String, _ keyPath: WritableKeyPath<Settings, Bool>) -> some View {
+    private func toggle(_ title: String, _ keyPath: WritableKeyPath<LumenCore.Settings, Bool>) -> some View {
         Toggle(title, isOn: Binding(
             get: { model.library.settings[keyPath: keyPath] },
             set: { value in model.update { $0[keyPath: keyPath] = value } }

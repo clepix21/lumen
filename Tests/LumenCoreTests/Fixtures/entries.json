@@ -1,0 +1,74 @@
+{
+  "assets": [
+    {
+      "accessibilityLabel": "macOS",
+      "categories": [
+        "dynamic-aerials"
+      ],
+      "id": "4DFE24ED-71CC-42D4-9FE8-3B8959B6CC19",
+      "includeInShuffle": false,
+      "localizedNameKey": "DYNAMIC_LIGHT_KEY",
+      "pointsOfInterest": {},
+      "preferredOrder": 0,
+      "previewImage": "https://sylvan.apple.com/itunes-assets/Aerials126/v4/51/ff/08/51ff0824-8da5-78f0-e218-9e61264965bb/Canyon_v9_WallpaperGallery_LM.png",
+      "shotID": "GG_LM_H",
+      "showInTopLevel": true,
+      "subcategories": [
+        "17647EAB-8357-48B0-BCD6-B892194267C5"
+      ],
+      "url-4K-SDR-240FPS": "https://sylvan.apple.com/itunes-assets/Aerials116/v4/cb/5b/50/cb5b5035-6701-619f-9065-3d7d0e5fbef4/GG_LM_H_v063_240fps-TSA.mov",
+      "variant": {
+        "appearance": "light",
+        "orientation": "landscape"
+      },
+      "videoGravity": "resize"
+    },
+    {
+      "accessibilityLabel": "macOS",
+      "categories": [
+        "dynamic-aerials"
+      ],
+      "id": "11AB4259-C435-4F92-A108-D6B9CC6D2295",
+      "includeInShuffle": false,
+      "localizedNameKey": "DYNAMIC_LIGHT_KEY",
+      "pointsOfInterest": {},
+      "preferredOrder": 2,
+      "previewImage": "https://sylvan.apple.com/itunes-assets/Aerials126/v4/51/ff/08/51ff0824-8da5-78f0-e218-9e61264965bb/Canyon_v9_WallpaperGallery_LM.png",
+      "shotID": "GG_LM_V",
+      "showInTopLevel": true,
+      "subcategories": [
+        "17647EAB-8357-48B0-BCD6-B892194267C5"
+      ],
+      "url-4K-SDR-240FPS": "https://sylvan.apple.com/itunes-assets/Aerials116/v4/cb/5b/50/cb5b5035-6701-619f-9065-3d7d0e5fbef4/GG_LM_V_v016_40fps-TSA.mov",
+      "variant": {
+        "appearance": "light",
+        "orientation": "portrait"
+      },
+      "videoGravity": "resize"
+    }
+  ],
+  "categories": [
+    {
+      "id": "dynamic-aerials",
+      "localizedDescriptionKey": "AerialCategoryDynamicDescription",
+      "localizedNameKey": "AerialCategoryDynamic",
+      "preferredOrder": 0,
+      "previewImage": "https://sylvan.apple.com/itunes-assets/Aerials126/v4/51/ff/08/51ff0824-8da5-78f0-e218-9e61264965bb/Canyon_v9_WallpaperGallery.png",
+      "representativeAssetID": "4DFE24ED-71CC-42D4-9FE8-3B8959B6CC19",
+      "subcategories": [
+        {
+          "combineVariants": true,
+          "id": "17647EAB-8357-48B0-BCD6-B892194267C5",
+          "localizedDescriptionKey": "AerialSubcategoryDescriptionGoldenGateGraphical",
+          "localizedNameKey": "AerialSubcategoryDescriptionGoldenGateGraphical",
+          "preferredOrder": -500,
+          "previewImage": "https://sylvan.apple.com/itunes-assets/Aerials126/v4/51/ff/08/51ff0824-8da5-78f0-e218-9e61264965bb/Canyon_v9_WallpaperGallery.png",
+          "representativeAssetID": "4DFE24ED-71CC-42D4-9FE8-3B8959B6CC19"
+        }
+      ]
+    }
+  ],
+  "initialAssetCount": 4,
+  "localizationVersion": "22L-1",
+  "version": 1
+}

@@ -9,6 +9,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var statusItem: NSStatusItem?
     private let popover = NSPopover()
     private var mainWindow: NSWindow?
+    private var lockScreenController: LockScreenController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
@@ -18,12 +19,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let isFirstLaunch = !FileManager.default.fileExists(atPath: paths.libraryFile.path)
         let window = WallpaperWindow(screen: screen)
         let model = AppModel(paths: paths, window: window)
+        let lockScreen = Self.makeLockScreenController(paths: paths, model: model)
         model.onSettingsChange = { [weak model] old, new in
-            guard new.launchAtLogin != old.launchAtLogin else { return }
-            Self.applyLoginItem(new.launchAtLogin, model: model)
+            if new.launchAtLogin != old.launchAtLogin {
+                Self.applyLoginItem(new.launchAtLogin, model: model)
+            }
+            if new.lockScreenEnabled != old.lockScreenEnabled {
+                lockScreen?.setEnabled(new.lockScreenEnabled, current: model?.currentVideo)
+            }
         }
         wallpaperWindow = window
         self.model = model
+        lockScreenController = lockScreen
 
         setUpStatusItem(model: model)
 
@@ -99,6 +106,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     func windowWillClose(_ notification: Notification) {
         guard (notification.object as? NSWindow) === mainWindow else { return }
         NSApp.setActivationPolicy(.accessory)
+    }
+
+    // MARK: - Lock screen
+
+    /// Lock screen video needs macOS 26 or later; returns nil before that.
+    private static func makeLockScreenController(paths: LumenPaths, model: AppModel) -> LockScreenController? {
+        guard #available(macOS 26, *) else { return nil }
+        let controller = LockScreenController(
+            editor: .standard(), cache: LockScreenCache(paths: paths), importer: model.importer
+        )
+        controller.onNotice = { [weak model] message in model?.lastError = message }
+        model.onCurrentVideoChange = { [weak controller] video in controller?.desktopVideoDidChange(video) }
+        model.onConditionsChange = { [weak controller] conditions in controller?.conditionsDidChange(conditions) }
+        model.onVideoDeleted = { [weak controller] video in controller?.videoWasDeleted(video) }
+        controller.conditionsDidChange(model.conditions)
+        controller.setEnabled(model.library.settings.lockScreenEnabled, current: model.currentVideo)
+        return controller
     }
 
     // MARK: - Login item

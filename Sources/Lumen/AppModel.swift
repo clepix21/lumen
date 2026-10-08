@@ -7,6 +7,7 @@ final class AppModel: ObservableObject {
     @Published private(set) var library: Library
     @Published private(set) var isPlaying = false
     @Published private(set) var currentVideoID: UUID?
+    @Published private(set) var session: PlaylistSession?
     @Published var importProgress: Double?
     @Published var lastError: String?
 
@@ -26,7 +27,6 @@ final class AppModel: ObservableObject {
     private let window: WallpaperWindow
     private let player: WallpaperPlayer
     private let monitor: SystemMonitor
-    private var cursor: PlaylistCursor?
     private var userPaused = false
 
     init(paths: LumenPaths, window: WallpaperWindow) {
@@ -39,7 +39,7 @@ final class AppModel: ObservableObject {
         monitor = SystemMonitor(window: window)
 
         player.setMuted(library.settings.isMuted)
-        player.onItemDidEnd = { [weak self] in self?.advance() }
+        player.onItemDidEnd = { [weak self] in self?.next() }
         monitor.onChange = { [weak self] conditions in
             self?.applyPlaybackPolicy()
             self?.onConditionsChange?(conditions)
@@ -54,16 +54,15 @@ final class AppModel: ObservableObject {
     }
 
     var currentPlaylist: Playlist? {
-        guard case .playlist(let id) = library.selection else { return nil }
-        return library.playlist(id: id)
+        session.flatMap { library.playlist(id: $0.playlistID) }
     }
 
     var positionText: String? {
-        guard let playlist = currentPlaylist, let cursor else { return nil }
-        return DisplayText.playlistPosition(name: playlist.name, position: cursor.position, count: cursor.count)
+        guard let playlist = currentPlaylist, let session else { return nil }
+        return DisplayText.playlistPosition(name: playlist.name, position: session.cursor.position, count: session.count)
     }
 
-    var isInPlaylist: Bool { currentPlaylist != nil }
+    var isInPlaylist: Bool { session != nil }
 
     func thumbnailURL(for videoID: UUID) -> URL {
         importer.thumbnailURL(for: videoID)
@@ -74,7 +73,7 @@ final class AppModel: ObservableObject {
     func play(videoID: UUID) {
         guard library.video(id: videoID) != nil else { return }
         library.selection = .video(videoID)
-        cursor = nil
+        session = nil
         userPaused = false
         save()
         show(videoID: videoID, loop: true)
@@ -85,19 +84,20 @@ final class AppModel: ObservableObject {
         library.selection = .playlist(playlistID)
         userPaused = false
         save()
-        startCursor(for: playlist)
+        session = PlaylistSession(playlist: playlist, shuffle: library.settings.shuffle, seed: Self.seed())
+        showSessionVideo()
     }
 
     func next() {
-        guard cursor != nil else { return }
-        cursor?.next()
-        showCursorVideo()
+        guard session != nil else { return }
+        session?.advance()
+        showSessionVideo()
     }
 
     func previous() {
-        guard cursor != nil else { return }
-        cursor?.previous()
-        showCursorVideo()
+        guard session != nil else { return }
+        session?.goBack()
+        showSessionVideo()
     }
 
     func togglePause() {
@@ -138,15 +138,9 @@ final class AppModel: ObservableObject {
         save()
         onVideoDeleted?(video)
 
-        guard wasCurrent else {
-            cursor?.remove(id)
-            return
-        }
-        if var cursor, library.selection != .none {
-            cursor.remove(id)
-            self.cursor = cursor
-            showCursorVideo()
-        } else {
+        if session != nil {
+            syncSessionWithLibrary()
+        } else if wasCurrent {
             stopWallpaper()
         }
     }
@@ -169,7 +163,7 @@ final class AppModel: ObservableObject {
     }
 
     func deletePlaylist(id: UUID) {
-        let wasCurrent = library.selection == .playlist(id)
+        let wasCurrent = session?.playlistID == id
         library.deletePlaylist(id: id)
         save()
         if wasCurrent {
@@ -180,30 +174,22 @@ final class AppModel: ObservableObject {
     func addVideo(_ videoID: UUID, toPlaylist playlistID: UUID) {
         library.addVideo(videoID, toPlaylist: playlistID)
         save()
-        refreshCursorIfCurrent(playlistID)
+        syncSessionWithLibrary()
     }
 
     func removeVideo(_ videoID: UUID, fromPlaylist playlistID: UUID) {
         library.removeVideo(videoID, fromPlaylist: playlistID)
         if library.selection == .playlist(playlistID), library.playlist(id: playlistID)?.videoIDs.isEmpty == true {
             library.selection = .none
-            save()
-            stopWallpaper()
-            return
         }
         save()
-        if library.selection == .playlist(playlistID), currentVideoID == videoID {
-            cursor?.remove(videoID)
-            showCursorVideo()
-        } else {
-            cursor?.remove(videoID)
-        }
+        syncSessionWithLibrary()
     }
 
     func moveVideos(inPlaylist playlistID: UUID, fromOffsets source: IndexSet, toOffset destination: Int) {
         library.moveVideos(inPlaylist: playlistID, fromOffsets: source, toOffset: destination)
         save()
-        refreshCursorIfCurrent(playlistID)
+        syncSessionWithLibrary()
     }
 
     func update(_ change: (inout Settings) -> Void) {
@@ -215,14 +201,18 @@ final class AppModel: ObservableObject {
         if new.isMuted != old.isMuted {
             player.setMuted(new.isMuted)
         }
-        if new.shuffle != old.shuffle, let playlist = currentPlaylist {
-            refreshCursor(for: playlist)
+        if new.shuffle != old.shuffle {
+            syncSessionWithLibrary()
         }
         applyPlaybackPolicy()
         onSettingsChange?(old, new)
     }
 
     // MARK: - Private
+
+    private static func seed() -> UInt64 {
+        UInt64.random(in: .min ... .max)
+    }
 
     private func restoreSelection() {
         switch library.selection {
@@ -231,47 +221,38 @@ final class AppModel: ObservableObject {
         case .video(let id):
             show(videoID: id, loop: true)
         case .playlist(let id):
-            if let playlist = library.playlist(id: id) {
-                startCursor(for: playlist)
+            if let playlist = library.playlist(id: id), !playlist.videoIDs.isEmpty {
+                session = PlaylistSession(playlist: playlist, shuffle: library.settings.shuffle, seed: Self.seed())
+                showSessionVideo()
             } else {
                 stopWallpaper()
             }
         }
     }
 
-    private func startCursor(for playlist: Playlist) {
-        cursor = PlaylistCursor(videoIDs: playlist.videoIDs, shuffle: library.settings.shuffle, seed: UInt64.random(in: .min ... .max))
-        showCursorVideo()
-    }
-
-    /// Rebuilds the cursor after the playlist changed, keeping the current video playing.
-    private func refreshCursorIfCurrent(_ playlistID: UUID) {
-        guard library.selection == .playlist(playlistID), let playlist = library.playlist(id: playlistID) else { return }
-        refreshCursor(for: playlist)
-    }
-
-    private func refreshCursor(for playlist: Playlist) {
-        var fresh = PlaylistCursor(videoIDs: playlist.videoIDs, shuffle: library.settings.shuffle, seed: UInt64.random(in: .min ... .max))
-        if let currentVideoID, fresh.order.contains(currentVideoID) {
-            while fresh.current != currentVideoID { fresh.next() }
+    /// Re-applies the running playlist after it (or the library) changed. Edits of other
+    /// playlists leave the session untouched.
+    private func syncSessionWithLibrary() {
+        guard var session else { return }
+        guard let playlist = library.playlist(id: session.playlistID) else {
+            stopWallpaper()
+            return
         }
-        cursor = fresh
+        let change = session.update(playlist: playlist, shuffle: library.settings.shuffle, seed: Self.seed())
+        self.session = session
+        if change == .reload {
+            showSessionVideo()
+        }
     }
 
-    private func advance() {
-        cursor?.next()
-        showCursorVideo()
-    }
-
-    private func showCursorVideo() {
-        guard let cursor, let id = cursor.current else {
+    private func showSessionVideo() {
+        guard let session, let id = session.current else {
             library.selection = .none
             save()
             stopWallpaper()
             return
         }
-        // A one-video playlist simply loops.
-        show(videoID: id, loop: cursor.count == 1)
+        show(videoID: id, loop: session.shouldLoop)
     }
 
     private func show(videoID: UUID, loop: Bool) {
@@ -288,7 +269,7 @@ final class AppModel: ObservableObject {
     }
 
     private func stopWallpaper() {
-        cursor = nil
+        session = nil
         currentVideoID = nil
         player.clear()
         player.setPlaying(false)

@@ -14,6 +14,12 @@ final class AppModel: ObservableObject {
     var onCurrentVideoChange: ((Video?) -> Void)?
     /// Called after any settings change, with the old and new values.
     var onSettingsChange: ((Settings, Settings) -> Void)?
+    /// Called when sleep, lock, occlusion or power state changes.
+    var onConditionsChange: ((PlaybackConditions) -> Void)?
+    /// Called after a video and its files were deleted.
+    var onVideoDeleted: ((Video) -> Void)?
+
+    var conditions: PlaybackConditions { monitor.conditions }
 
     let importer: VideoImporter
     private let store: LibraryStore
@@ -34,7 +40,10 @@ final class AppModel: ObservableObject {
 
         player.setMuted(library.settings.isMuted)
         player.onItemDidEnd = { [weak self] in self?.advance() }
-        monitor.onChange = { [weak self] _ in self?.applyPlaybackPolicy() }
+        monitor.onChange = { [weak self] conditions in
+            self?.applyPlaybackPolicy()
+            self?.onConditionsChange?(conditions)
+        }
         restoreSelection()
     }
 
@@ -127,6 +136,7 @@ final class AppModel: ObservableObject {
         library.removeVideo(id: id)
         try? importer.deleteFiles(for: video)
         save()
+        onVideoDeleted?(video)
 
         guard wasCurrent else {
             cursor?.remove(id)

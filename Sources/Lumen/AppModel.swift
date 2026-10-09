@@ -28,6 +28,8 @@ final class AppModel: ObservableObject {
     private let player: WallpaperPlayer
     private let monitor: SystemMonitor
     private var userPaused = false
+    /// Unplayable videos skipped in a row; stops a playlist where nothing plays.
+    private var consecutiveFailures = 0
 
     init(paths: LumenPaths, window: WallpaperWindow) {
         try? paths.createDirectories()
@@ -39,7 +41,11 @@ final class AppModel: ObservableObject {
         monitor = SystemMonitor(window: window)
 
         player.setMuted(library.settings.isMuted)
-        player.onItemDidEnd = { [weak self] in self?.next() }
+        player.onItemDidEnd = { [weak self] in
+            self?.consecutiveFailures = 0
+            self?.next()
+        }
+        player.onItemDidFail = { [weak self] in self?.currentVideoFailed() }
         monitor.onChange = { [weak self] conditions in
             self?.applyPlaybackPolicy()
             self?.onConditionsChange?(conditions)
@@ -243,6 +249,21 @@ final class AppModel: ObservableObject {
         if change == .reload {
             showSessionVideo()
         }
+    }
+
+    /// Skips an unplayable video in a playlist; otherwise stops instead of leaving a black desktop.
+    private func currentVideoFailed() {
+        let name = currentVideo?.name ?? "La vidéo"
+        consecutiveFailures += 1
+        if let session, consecutiveFailures < session.count {
+            next()
+            return
+        }
+        consecutiveFailures = 0
+        library.selection = .none
+        save()
+        stopWallpaper()
+        lastError = "« \(name) » ne peut pas être lue. Supprime-la et importe-la à nouveau."
     }
 
     private func showSessionVideo() {

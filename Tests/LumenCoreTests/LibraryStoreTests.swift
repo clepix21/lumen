@@ -52,6 +52,25 @@ func makeVideo(name: String = "Plage") -> Video {
         #expect(corrupt.count == 1)
     }
 
+    @Test func unreadableFileIsKeptAndNeverOverwritten() throws {
+        let paths = try makeTempPaths()
+        let store = LibraryStore(paths: paths)
+        var library = Library.empty
+        library.addVideo(makeVideo())
+        try store.save(library)
+        let original = try Data(contentsOf: paths.libraryFile)
+        try FileManager.default.setAttributes([.posixPermissions: 0o000], ofItemAtPath: paths.libraryFile.path)
+
+        #expect(store.load() == .empty)
+        try store.save(.empty)
+
+        let names = try FileManager.default.contentsOfDirectory(atPath: paths.root.path)
+        let aside = try #require(names.first { $0.hasPrefix("library.unreadable-") })
+        let asideURL = paths.root.appendingPathComponent(aside)
+        try FileManager.default.setAttributes([.posixPermissions: 0o644], ofItemAtPath: asideURL.path)
+        #expect(try Data(contentsOf: asideURL) == original)
+    }
+
     @Test func defaultSettingsMatchSpec() {
         let settings = Settings()
         #expect(settings.isMuted == true)

@@ -3,6 +3,7 @@ public struct PlaybackConditions: Equatable, Sendable {
     public var isOccluded = false
     public var isScreenAsleep = false
     public var isScreenLocked = false
+    public var isScreenSaverRunning = false
     public var isSessionActive = true
     public var isOnBattery = false
     public var userPaused = false
@@ -13,7 +14,7 @@ public struct PlaybackConditions: Equatable, Sendable {
 public enum PlaybackPolicy {
     /// Plays only when someone can see the wallpaper and no setting asks to save energy.
     public static func shouldPlay(_ conditions: PlaybackConditions, settings: Settings) -> Bool {
-        if conditions.userPaused || conditions.isScreenAsleep || conditions.isScreenLocked {
+        if conditions.userPaused || conditions.isScreenAsleep || conditions.isScreenLocked || conditions.isScreenSaverRunning {
             return false
         }
         if !conditions.isSessionActive {

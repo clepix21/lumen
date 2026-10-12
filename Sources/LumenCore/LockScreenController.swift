@@ -25,6 +25,8 @@ public final class LockScreenController {
     private var wanted: Video?
     private var pendingRefresh: Task<Void, Never>?
     private var conversion: Task<Void, Never>?
+    /// Videos deleted while being converted; their finished conversion is discarded.
+    private var deletedVideoIDs: Set<UUID> = []
     private var agentRestartPending = false
 
     public init(
@@ -86,6 +88,7 @@ public final class LockScreenController {
     }
 
     public func videoWasDeleted(_ video: Video) {
+        deletedVideoIDs.insert(video.id)
         try? cache.removeCache(for: video)
     }
 
@@ -112,6 +115,10 @@ public final class LockScreenController {
             }
             guard let self else { return }
             self.conversion = nil
+            if self.deletedVideoIDs.contains(video.id) {
+                try? self.cache.removeCache(for: video)
+                return
+            }
             if failed {
                 self.onNotice?("La vidéo n'a pas pu être préparée pour l'écran de verrouillage.")
             } else if !Task.isCancelled {

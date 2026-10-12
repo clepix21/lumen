@@ -12,6 +12,8 @@ final class AppModel: ObservableObject {
     @Published private(set) var currentVideoID: UUID?
     @Published private(set) var session: PlaylistSession?
     @Published var importProgress: Double?
+    /// True while files are dragged over the main window.
+    @Published var isDropTargeted = false
     @Published var lastError: String?
 
     /// Called whenever the video shown on the desktop changes (lock screen follows it).

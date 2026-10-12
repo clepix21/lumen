@@ -1,5 +1,8 @@
 import AppKit
 import LumenCore
+import os
+
+private let log = Logger(subsystem: "local.lumen.Lumen", category: "library")
 
 /// The app's state and every user action. Owns playback of the wallpaper.
 @MainActor
@@ -130,6 +133,7 @@ final class AppModel: ObservableObject {
                     play(videoID: video.id)
                 }
             } catch {
+                log.error("Import failed for \(url.absoluteString, privacy: .public): \(String(describing: error), privacy: .public)")
                 lastError = (error as? ImportError)?.frenchMessage ?? ImportError.copyFailed.frenchMessage
             }
         }

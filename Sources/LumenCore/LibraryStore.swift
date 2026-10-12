@@ -10,19 +10,29 @@ public struct LibraryStore: Sendable {
 
     /// Returns the saved library, or `.empty` when the file is missing.
     /// An unreadable file is renamed to `library.corrupt-<timestamp>.json` so it is never lost.
+    /// An existing file that cannot be read is renamed to `library.unreadable-<timestamp>.json`,
+    /// so the next save never overwrites it.
     public func load() -> Library {
         let url = paths.libraryFile
-        guard let data = try? Data(contentsOf: url) else { return .empty }
+        guard FileManager.default.fileExists(atPath: url.path) else { return .empty }
+        guard let data = try? Data(contentsOf: url) else {
+            setAside(prefix: "library.unreadable")
+            return .empty
+        }
         do {
             return try Self.decoder.decode(Library.self, from: data)
         } catch {
-            let formatter = DateFormatter()
-            formatter.locale = Locale(identifier: "en_US_POSIX")
-            formatter.dateFormat = "yyyyMMdd-HHmmss"
-            let aside = paths.root.appendingPathComponent("library.corrupt-\(formatter.string(from: Date())).json")
-            try? FileManager.default.moveItem(at: url, to: aside)
+            setAside(prefix: "library.corrupt")
             return .empty
         }
+    }
+
+    private func setAside(prefix: String) {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyyMMdd-HHmmss"
+        let aside = paths.root.appendingPathComponent("\(prefix)-\(formatter.string(from: Date())).json")
+        try? FileManager.default.moveItem(at: paths.libraryFile, to: aside)
     }
 
     public func save(_ library: Library) throws {

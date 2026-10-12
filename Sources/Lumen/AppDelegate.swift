@@ -94,7 +94,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             window.isMovableByWindowBackground = true
             window.isReleasedWhenClosed = false
             window.appearance = NSAppearance(named: .darkAqua)
-            window.contentView = NSHostingView(rootView: MainWindowView(model: model))
+            let content = FileDropHostingView(rootView: MainWindowView(model: model))
+            content.onDropFiles = { [weak model] urls in
+                Task { await model?.importVideos(urls) }
+            }
+            content.onTargetedChange = { [weak model] targeted in model?.isDropTargeted = targeted }
+            window.contentView = content
             window.delegate = self
             window.center()
             mainWindow = window

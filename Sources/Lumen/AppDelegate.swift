@@ -13,7 +13,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
-        guard let screen = NSScreen.main ?? NSScreen.screens.first else { return }
+        guard let screen = NSScreen.screens.first else { return }
 
         let paths = LumenPaths.standard()
         let isFirstLaunch = !FileManager.default.fileExists(atPath: paths.libraryFile.path)

@@ -32,7 +32,8 @@ final class AppModel: ObservableObject {
     private let window: WallpaperWindow
     private let player: WallpaperPlayer
     private let monitor: SystemMonitor
-    private var userPaused = false
+    /// Pause asked by the user; the buttons follow it, not automatic energy pauses.
+    @Published private(set) var userPaused = false
     /// Unplayable videos skipped in a row; stops a playlist where nothing plays.
     private var consecutiveFailures = 0
 
@@ -231,7 +232,13 @@ final class AppModel: ObservableObject {
         case .none:
             stopWallpaper()
         case .video(let id):
-            show(videoID: id, loop: true)
+            if library.video(id: id) != nil {
+                show(videoID: id, loop: true)
+            } else {
+                library.selection = .none
+                save()
+                stopWallpaper()
+            }
         case .playlist(let id):
             if let playlist = library.playlist(id: id), !playlist.videoIDs.isEmpty {
                 session = PlaylistSession(playlist: playlist, shuffle: library.settings.shuffle, seed: Self.seed())

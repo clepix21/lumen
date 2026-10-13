@@ -33,8 +33,9 @@ final class WallpaperWindow: NSWindow {
     override var canBecomeKey: Bool { false }
     override var canBecomeMain: Bool { false }
 
+    /// The screen holding the menu bar (`NSScreen.main` would follow keyboard focus instead).
     func fitToMainScreen() {
-        guard let screen = NSScreen.main ?? NSScreen.screens.first else { return }
+        guard let screen = NSScreen.screens.first else { return }
         setFrame(screen.frame, display: true)
     }
 }

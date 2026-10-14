@@ -22,7 +22,7 @@ struct MenuBarView: View {
                 Spacer()
                 controlButton("backward.fill", label: "Précédente", enabled: model.isInPlaylist) { model.previous() }
                 Spacer()
-                controlButton(model.isPlaying ? "pause.fill" : "play.fill", label: model.isPlaying ? "Pause" : "Lecture",
+                controlButton(model.userPaused ? "play.fill" : "pause.fill", label: model.userPaused ? "Lecture" : "Pause",
                               enabled: model.currentVideoID != nil) { model.togglePause() }
                 Spacer()
                 controlButton("forward.fill", label: "Suivante", enabled: model.isInPlaylist) { model.next() }
@@ -34,7 +34,9 @@ struct MenuBarView: View {
             .font(.system(size: 16))
 
             Divider()
-            toggle("Écran de verrouillage animé", \.lockScreenEnabled)
+            if #available(macOS 26, *) {
+                toggle("Écran de verrouillage animé", \.lockScreenEnabled)
+            }
             toggle("Pause sur batterie", \.pauseOnBattery)
             toggle("Lecture aléatoire", \.shuffle)
             Divider()

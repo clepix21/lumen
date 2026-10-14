@@ -101,8 +101,6 @@ Deux particularités viennent de la compilation sans Xcode :
 - `Package.swift` indique explicitement le chemin du plugin de macros de Swift Testing, que SwiftPM oublie parfois avec les seuls Command Line Tools.
 - Les vues SwiftUI déclarent leur état avec `State(initialValue:)` plutôt qu'avec `@State`, car le plugin de cette macro n'est livré qu'avec Xcode dans le SDK de macOS 27.
 
-La conception et le plan de construction sont dans [`docs/superpowers/`](docs/superpowers/).
-
 ## Licence
 
 Lumen est distribué sous [licence MIT](LICENSE).

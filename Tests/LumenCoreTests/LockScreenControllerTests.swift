@@ -29,7 +29,10 @@ final class LockScreenProbe {
         return condition()
     }
 
-    func makeSetup(delay: Duration = .zero, conversionNeverEnds: Bool = false, conversionTime: UInt64 = 0) throws -> Setup {
+    func makeSetup(
+        delay: Duration = .zero, conversionNeverEnds: Bool = false, conversionTime: UInt64 = 0,
+        lumenSelected: Bool = true
+    ) throws -> Setup {
         let paths = try makeTempPaths()
         let aerials = paths.root.appendingPathComponent("aerials", isDirectory: true)
         try FileManager.default.createDirectory(at: aerials.appendingPathComponent("manifest"), withIntermediateDirectories: true)
@@ -57,6 +60,7 @@ final class LockScreenProbe {
                 }
             },
             restartAgent: { probe.restarts += 1 },
+            isLumenSelected: { lumenSelected },
             slotUpdateDelay: delay
         )
         controller.onNotice = { probe.notices.append($0) }
@@ -160,6 +164,20 @@ final class LockScreenProbe {
 
         let cached = LockScreenCache(paths: setup.paths).cachedURL(for: video)
         #expect(!FileManager.default.fileExists(atPath: cached.path))
+    }
+
+    @Test func slotChangeDoesNotRestartAgentWhenLumenIsNotSelected() async throws {
+        let setup = try makeSetup(lumenSelected: false)
+        let first = try storedVideo(setup), second = try storedVideo(setup)
+        setup.controller.setEnabled(true, current: first)
+        #expect(setup.probe.restarts == 1)
+
+        setup.controller.desktopVideoDidChange(second)
+
+        let importer = VideoImporter(paths: setup.paths)
+        #expect(await waitUntil { setup.editor.slotHolds(importer.fileURL(for: second)) })
+        try await Task.sleep(nanoseconds: 200_000_000)
+        #expect(setup.probe.restarts == 1)
     }
 
     @Test func disablingUninstalls() async throws {

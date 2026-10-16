@@ -205,6 +205,22 @@ final class AppModel: ObservableObject {
         syncSessionWithLibrary()
     }
 
+    // MARK: - Cache
+
+    /// Space `clearCache()` would free: lock screen conversions and orphan files.
+    func cacheSize() -> Int64 {
+        CacheCleaner(paths: importer.paths).cacheSize(for: library)
+    }
+
+    func clearCache() {
+        do {
+            let freed = try CacheCleaner(paths: importer.paths).clear(for: library)
+            lastError = "\(DisplayText.size(freed)) libérés."
+        } catch {
+            lastError = "Le cache n'a pas pu être entièrement vidé."
+        }
+    }
+
     func update(_ change: (inout Settings) -> Void) {
         let old = library.settings
         change(&library.settings)

@@ -1,7 +1,8 @@
 import AppKit
 import AVFoundation
 
-/// Plays one video into a host view: looping (single video) or once with an end callback (playlist).
+/// Plays one video into one or more host views (one per screen): looping (single video) or once
+/// with an end callback (playlist). All screens share a single `AVPlayer`, so the video is decoded once.
 ///
 /// Looping seeks back to the start instead of using `AVPlayerLooper`, which raises an exception
 /// for items without a duration and keeps several replicas decoding.
@@ -12,7 +13,8 @@ public final class WallpaperPlayer {
     public var onItemDidFail: (() -> Void)?
 
     private let player = AVPlayer()
-    private let playerLayer: AVPlayerLayer
+    private(set) var hostLayers: [AVPlayerLayer] = []
+    private var hostViews: [ObjectIdentifier: AVPlayerLayer] = [:]
     private var loops = false
     private var wantsPlaying = false
     private var isMuted = false
@@ -22,12 +24,27 @@ public final class WallpaperPlayer {
     public init(hostView: NSView) {
         player.preventsDisplaySleepDuringVideoPlayback = false
         player.actionAtItemEnd = .pause
-        playerLayer = AVPlayerLayer(player: player)
-        playerLayer.videoGravity = .resizeAspectFill
-        playerLayer.autoresizingMask = [.layerWidthSizable, .layerHeightSizable]
-        hostView.wantsLayer = true
-        playerLayer.frame = hostView.bounds
-        hostView.layer?.addSublayer(playerLayer)
+        addHostView(hostView)
+    }
+
+    /// Shows the video in another view too (e.g. a newly connected screen).
+    public func addHostView(_ view: NSView) {
+        guard hostViews[ObjectIdentifier(view)] == nil else { return }
+        let layer = AVPlayerLayer(player: player)
+        layer.videoGravity = .resizeAspectFill
+        layer.autoresizingMask = [.layerWidthSizable, .layerHeightSizable]
+        view.wantsLayer = true
+        layer.frame = view.bounds
+        view.layer?.addSublayer(layer)
+        hostViews[ObjectIdentifier(view)] = layer
+        hostLayers.append(layer)
+    }
+
+    public func removeHostView(_ view: NSView) {
+        guard let layer = hostViews.removeValue(forKey: ObjectIdentifier(view)) else { return }
+        layer.removeFromSuperlayer()
+        layer.player = nil
+        hostLayers.removeAll { $0 === layer }
     }
 
     /// Whether each audio track of the current item is enabled (empty when it has none).

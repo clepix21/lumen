@@ -14,6 +14,7 @@ Lumen lit tes propres vidéos en fond d'écran, derrière les icônes du bureau,
 - **Écran de verrouillage animé** (macOS 26 et plus, en option) : il suit la vidéo du bureau.
 - **Fenêtre principale** façon Wallper, et **menu dans la barre des menus** pour les gestes rapides : pause, son, vidéo suivante.
 - **Lancement au démarrage** du Mac.
+- **Vider le cache** depuis Réglages › Stockage : supprime les versions préparées pour l'écran de verrouillage et les fichiers inutilisés, sans toucher à tes vidéos.
 
 ## Consommation
 
@@ -62,7 +63,7 @@ Le script compile Lumen en mode release, assemble `build/Lumen.app`, le signe lo
 ### Écran de verrouillage animé
 
 1. Active « Écran de verrouillage animé » dans le menu ou dans Réglages.
-2. Une seule fois : choisis **Lumen** dans **Réglages Système › Fond d'écran**.
+2. Une seule fois : choisis **Lumen** dans **Réglages Système › Fond d'écran**. Si tu utilises plusieurs bureaux virtuels, active aussi « Afficher sur tous les bureaux » : l'écran de verrouillage reprend le fond du bureau sur lequel tu te trouves.
 3. Verrouille ton Mac (ctrl-cmd-Q) : la vidéo du bureau s'y affiche, sans le son.
 
 macOS ne propose pas d'interface officielle pour cela. Lumen ajoute une entrée « Lumen » à la liste des fonds d'écran Aerial de macOS, sans toucher aux autres entrées, puis relance le service de fond d'écran du système. Désactiver l'option retire cette entrée proprement. Une mise à jour de macOS pourrait casser cette fonction ; le reste de Lumen continuerait de marcher.

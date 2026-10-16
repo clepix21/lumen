@@ -5,6 +5,9 @@ import SwiftUI
 /// "Réglages" section.
 struct SettingsView: View {
     @ObservedObject var model: AppModel
+    // Plain `State` values: the `@State` macro plugin is not available without Xcode.
+    private let cacheSize = State<Int64>(initialValue: 0)
+    private let confirmingClear = State(initialValue: false)
 
     var body: some View {
         ScrollView {
@@ -28,14 +31,37 @@ struct SettingsView: View {
                         Text("Nécessite macOS 26 ou plus récent.").font(.system(size: 11)).opacity(0.6)
                     }
                 }
-                Button("Afficher le dossier des vidéos") {
-                    NSWorkspace.shared.activateFileViewerSelecting([model.importer.paths.videos])
+                group("Stockage") {
+                    HStack {
+                        Text("Cache : \(DisplayText.size(cacheSize.wrappedValue))")
+                            .font(.system(size: 12))
+                        Spacer()
+                        Button("Vider le cache") { confirmingClear.wrappedValue = true }
+                            .disabled(cacheSize.wrappedValue == 0)
+                    }
+                    Text("Supprime les versions préparées pour l'écran de verrouillage et les fichiers inutilisés. Tes vidéos ne sont pas touchées.")
+                        .font(.system(size: 11)).opacity(0.6)
+                    Button("Afficher le dossier des vidéos") {
+                        NSWorkspace.shared.activateFileViewerSelecting([model.importer.paths.videos])
+                    }
                 }
             }
             .frame(maxWidth: 520, alignment: .leading)
             .padding(24)
             .padding(.top, 40)
             .frame(maxWidth: .infinity)
+        }
+        .onAppear { cacheSize.wrappedValue = model.cacheSize() }
+        .confirmationDialog(
+            "Vider le cache (\(DisplayText.size(cacheSize.wrappedValue))) ?",
+            isPresented: confirmingClear.projectedValue
+        ) {
+            Button("Vider le cache", role: .destructive) {
+                model.clearCache()
+                cacheSize.wrappedValue = model.cacheSize()
+            }
+        } message: {
+            Text("Les versions pour l'écran de verrouillage seront recréées si besoin.")
         }
     }
 

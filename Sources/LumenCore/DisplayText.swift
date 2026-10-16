@@ -23,7 +23,8 @@ public enum DisplayText {
         return String(format: "%d:%02d", total / 60, total % 60)
     }
 
-    static func size(_ bytes: Int64) -> String {
+    /// "84 Mo", "1,5 Go"
+    public static func size(_ bytes: Int64) -> String {
         let megabytes = Double(bytes) / 1_000_000
         if megabytes < 1000 {
             return "\(Int(megabytes.rounded())) Mo"

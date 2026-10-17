@@ -29,7 +29,7 @@ final class AppModel: ObservableObject {
 
     let importer: VideoImporter
     private let store: LibraryStore
-    private let window: WallpaperWindow
+    private let screens: WallpaperScreens
     private let player: WallpaperPlayer
     private let monitor: SystemMonitor
     /// Pause asked by the user; the buttons follow it, not automatic energy pauses.
@@ -37,14 +37,24 @@ final class AppModel: ObservableObject {
     /// Unplayable videos skipped in a row; stops a playlist where nothing plays.
     private var consecutiveFailures = 0
 
-    init(paths: LumenPaths, window: WallpaperWindow) {
+    init(paths: LumenPaths, screens: WallpaperScreens) {
         try? paths.createDirectories()
         store = LibraryStore(paths: paths)
         importer = VideoImporter(paths: paths)
         library = store.load()
-        self.window = window
-        player = WallpaperPlayer(hostView: window.playerView)
-        monitor = SystemMonitor(window: window)
+        self.screens = screens
+        // One player for every screen: the video is decoded once.
+        player = WallpaperPlayer(hostView: screens.windows.first?.playerView ?? NSView())
+        for window in screens.windows.dropFirst() {
+            player.addHostView(window.playerView)
+        }
+        monitor = SystemMonitor(windows: screens.windows)
+        screens.onChange = { [weak self] added, removed in
+            guard let self else { return }
+            for window in removed { self.player.removeHostView(window.playerView) }
+            for window in added { self.player.addHostView(window.playerView) }
+            self.monitor.setWindows(self.screens.windows)
+        }
 
         player.setMuted(library.settings.isMuted)
         player.onItemDidEnd = { [weak self] in
@@ -311,8 +321,7 @@ final class AppModel: ObservableObject {
             return
         }
         currentVideoID = videoID
-        window.fitToMainScreen()
-        window.orderFront(nil)
+        screens.show()
         player.load(url: importer.fileURL(for: video), loop: loop)
         applyPlaybackPolicy()
         onCurrentVideoChange?(video)
@@ -323,7 +332,7 @@ final class AppModel: ObservableObject {
         currentVideoID = nil
         player.clear()
         player.setPlaying(false)
-        window.orderOut(nil)
+        screens.hide()
         isPlaying = false
         onCurrentVideoChange?(nil)
     }

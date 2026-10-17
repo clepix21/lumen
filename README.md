@@ -4,9 +4,16 @@ Fonds d'écran vidéo animés pour macOS, gratuits et légers.
 
 Lumen lit tes propres vidéos en fond d'écran, derrière les icônes du bureau, et peut aussi les afficher sur l'écran de verrouillage. C'est une alternative gratuite aux applications payantes comme Wallper, Wallux, Wallspace ou Backdrop, centrée sur l'essentiel : tes vidéos, en boucle, sans faire chauffer le Mac.
 
+![Lumen en fond d'écran, avec sa fenêtre principale](screenshots/apercu.jpg)
+
+| Bibliothèque | Réglages | Barre des menus |
+|---|---|---|
+| ![Bibliothèque](screenshots/bibliotheque.jpg) | ![Réglages](screenshots/reglages.jpg) | ![Menu de la barre des menus](screenshots/menu.jpg) |
+
 ## Fonctionnalités
 
 - **Vidéo en fond d'écran** : n'importe quelle vidéo `.mp4`, `.mov` ou `.m4v`, jusqu'en 4K, en boucle derrière les icônes, sur tous les bureaux virtuels.
+- **Plusieurs écrans** : la vidéo s'affiche sur tous les écrans branchés, décodée une seule fois.
 - **Import par glisser-déposer** ou avec le bouton ＋. Les vidéos sont copiées dans Lumen : déplacer ou supprimer l'original ne casse rien.
 - **Playlists** : quand une vidéo se termine, la suivante démarre, puis on revient au début. Lecture aléatoire en option.
 - **Son** : les vidéos peuvent jouer leur son, coupé par défaut.

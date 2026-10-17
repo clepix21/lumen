@@ -16,8 +16,12 @@ public struct LumenPaths: Sendable {
         libraryFile = root.appendingPathComponent("library.json")
     }
 
-    /// `~/Library/Application Support/Lumen`
+    /// `~/Library/Application Support/Lumen`, or the folder in the `LUMEN_LIBRARY_DIR`
+    /// environment variable (development and demos, without touching the real library).
     public static func standard() -> LumenPaths {
+        if let custom = ProcessInfo.processInfo.environment["LUMEN_LIBRARY_DIR"], !custom.isEmpty {
+            return LumenPaths(root: URL(fileURLWithPath: custom, isDirectory: true))
+        }
         let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         return LumenPaths(root: support.appendingPathComponent("Lumen", isDirectory: true))
     }

@@ -117,7 +117,8 @@ struct LibraryView: View {
             model.play(videoID: video.id)
         } label: {
             VStack(alignment: .leading, spacing: 4) {
-                ThumbnailTile(url: model.thumbnailURL(for: video.id), isCurrent: model.currentVideoID == video.id)
+                ThumbnailTile(url: model.thumbnailURL(for: video.id), isCurrent: model.currentVideoID == video.id,
+                              previewVideoURL: model.importer.fileURL(for: video))
                 Text(video.name).font(.system(size: 11)).lineLimit(1).opacity(0.8)
             }
             .contentShape(Rectangle())

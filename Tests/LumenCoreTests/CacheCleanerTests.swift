@@ -59,6 +59,18 @@ import Testing
         }
     }
 
+    @Test func conversionInProgressIsKept() throws {
+        let setup = try makeSetup()
+        let partial = setup.paths.lockScreen.appendingPathComponent(".\(UUID().uuidString).partial.mov")
+        try Data(count: 4_000).write(to: partial)
+        let cleaner = CacheCleaner(paths: setup.paths)
+
+        #expect(cleaner.cacheSize(for: setup.library) == 7_300)
+        try cleaner.clear(for: setup.library)
+
+        #expect(FileManager.default.fileExists(atPath: partial.path))
+    }
+
     @Test func emptyCacheIsZero() throws {
         let paths = try makeTempPaths()
         let cleaner = CacheCleaner(paths: paths)

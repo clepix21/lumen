@@ -35,8 +35,11 @@ public struct CacheCleaner: Sendable {
             + files(in: paths.thumbnails).filter { !usedThumbnails.contains($0.lastPathComponent) }
     }
 
+    /// Hidden files are skipped: they are conversions still being written.
     private func files(in directory: URL) -> [URL] {
-        (try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: [.fileSizeKey])) ?? []
+        (try? FileManager.default.contentsOfDirectory(
+            at: directory, includingPropertiesForKeys: [.fileSizeKey], options: [.skipsHiddenFiles]
+        )) ?? []
     }
 
     private func size(of url: URL) -> Int64 {

@@ -8,7 +8,9 @@ struct MenuBarView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
+            // Full popover width (260 minus the 12-point padding on each side), 16:10.
             ThumbnailTile(url: model.currentVideoID.map(model.thumbnailURL(for:)))
+                .frame(width: 236, height: 147.5)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(model.currentVideo?.name ?? "Aucune vidéo")
@@ -64,13 +66,18 @@ struct MenuBarView: View {
         .accessibilityLabel(label)
     }
 
+    /// Label on the left, switch aligned on the right edge.
     private func toggle(_ title: String, _ keyPath: WritableKeyPath<LumenCore.Settings, Bool>) -> some View {
-        Toggle(title, isOn: Binding(
-            get: { model.library.settings[keyPath: keyPath] },
-            set: { value in model.update { $0[keyPath: keyPath] = value } }
-        ))
-        .toggleStyle(.switch)
-        .controlSize(.mini)
-        .font(.system(size: 12))
+        HStack {
+            Text(title).font(.system(size: 12))
+            Spacer()
+            Toggle(title, isOn: Binding(
+                get: { model.library.settings[keyPath: keyPath] },
+                set: { value in model.update { $0[keyPath: keyPath] = value } }
+            ))
+            .labelsHidden()
+            .toggleStyle(.switch)
+            .controlSize(.mini)
+        }
     }
 }

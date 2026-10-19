@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/icon.png" alt="Icône de Lumen" width="128">
+</p>
+
 # Lumen
 
 Fonds d'écran vidéo animés pour macOS, gratuits et légers.

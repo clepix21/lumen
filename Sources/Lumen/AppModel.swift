@@ -14,6 +14,9 @@ final class AppModel: ObservableObject {
     @Published var importProgress: Double?
     /// True while files are dragged over the main window.
     @Published var isDropTargeted = false
+    /// A newer release found on GitHub, if any.
+    @Published private(set) var availableUpdate: UpdateChecker.Release?
+    private var updateScheduler: NSBackgroundActivityScheduler?
     @Published var lastError: String?
 
     /// Called whenever the video shown on the desktop changes (lock screen follows it).
@@ -215,6 +218,39 @@ final class AppModel: ObservableObject {
         syncSessionWithLibrary()
     }
 
+    // MARK: - Updates
+
+    /// Checks now, then about once a day at a moment macOS picks to save energy.
+    func startUpdateChecks() {
+        updateScheduler?.invalidate()
+        updateScheduler = nil
+        guard library.settings.checkForUpdates else {
+            availableUpdate = nil
+            return
+        }
+        Task { await checkForUpdates() }
+        let scheduler = NSBackgroundActivityScheduler(identifier: "local.lumen.Lumen.update-check")
+        scheduler.repeats = true
+        scheduler.interval = 24 * 60 * 60
+        scheduler.qualityOfService = .utility
+        scheduler.schedule { [weak self] completion in
+            Task { @MainActor in
+                await self?.checkForUpdates()
+                completion(.finished)
+            }
+        }
+        updateScheduler = scheduler
+    }
+
+    func checkForUpdates() async {
+        guard library.settings.checkForUpdates else { return }
+        availableUpdate = await UpdateChecker().newerRelease(than: Self.appVersion)
+    }
+
+    static var appVersion: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0"
+    }
+
     // MARK: - Cache
 
     /// Space `clearCache()` would free: lock screen conversions and orphan files.
@@ -242,6 +278,9 @@ final class AppModel: ObservableObject {
         }
         if new.shuffle != old.shuffle {
             syncSessionWithLibrary()
+        }
+        if new.checkForUpdates != old.checkForUpdates {
+            startUpdateChecks()
         }
         applyPlaybackPolicy()
         onSettingsChange?(old, new)

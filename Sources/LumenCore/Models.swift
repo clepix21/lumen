@@ -48,6 +48,8 @@ public struct Settings: Codable, Equatable, Sendable {
     public var pauseOnBattery = false
     public var shuffle = false
     public var lockScreenEnabled = false
+    /// Once a day, ask GitHub whether a newer version exists.
+    public var checkForUpdates = true
 
     public init() {}
 
@@ -61,6 +63,7 @@ public struct Settings: Codable, Equatable, Sendable {
         pauseOnBattery = try container.decodeIfPresent(Bool.self, forKey: .pauseOnBattery) ?? defaults.pauseOnBattery
         shuffle = try container.decodeIfPresent(Bool.self, forKey: .shuffle) ?? defaults.shuffle
         lockScreenEnabled = try container.decodeIfPresent(Bool.self, forKey: .lockScreenEnabled) ?? defaults.lockScreenEnabled
+        checkForUpdates = try container.decodeIfPresent(Bool.self, forKey: .checkForUpdates) ?? defaults.checkForUpdates
     }
 }
 

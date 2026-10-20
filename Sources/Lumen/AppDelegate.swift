@@ -45,6 +45,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSPo
         if isFirstLaunch {
             Self.applyLoginItem(model.library.settings.launchAtLogin, model: model)
         }
+        model.startUpdateChecks()
         if model.library.videos.isEmpty {
             showMainWindow()
         }

@@ -17,7 +17,8 @@ Lumen lit tes propres vidéos en fond d'écran, derrière les icônes du bureau,
 ## Fonctionnalités
 
 - **Vidéo en fond d'écran** : n'importe quelle vidéo `.mp4`, `.mov` ou `.m4v`, jusqu'en 4K, en boucle derrière les icônes, sur tous les bureaux virtuels.
-- **Plusieurs écrans** : la vidéo s'affiche sur tous les écrans branchés, décodée une seule fois.
+- **Plusieurs écrans** : la même vidéo sur tous les écrans, décodée une seule fois, ou une vidéo différente par écran (désactive « Même vidéo sur tous les écrans » dans Réglages, puis choisis l'écran au-dessus de « Mes vidéos »). Les écrans secondaires restent muets.
+- **Raccourcis clavier globaux**, depuis n'importe quelle app : ⌃⌥⌘P pause ou lecture, ⌃⌥⌘→ vidéo suivante, ⌃⌥⌘← vidéo précédente, ⌃⌥⌘S son. Aucune autorisation macOS n'est nécessaire, et ils se désactivent dans Réglages.
 - **Import par glisser-déposer** ou avec le bouton ＋. Les vidéos sont copiées dans Lumen : déplacer ou supprimer l'original ne casse rien.
 - **Playlists** : quand une vidéo se termine, la suivante démarre, puis on revient au début. Lecture aléatoire en option.
 - **Son** : les vidéos peuvent jouer leur son, coupé par défaut.

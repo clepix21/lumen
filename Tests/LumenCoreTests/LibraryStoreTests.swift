@@ -97,6 +97,12 @@ func makeVideo(name: String = "Plage") -> Video {
         #expect(FileManager.default.fileExists(atPath: paths.libraryFile.path))
     }
 
+    @Test func globalShortcutsAreOnByDefaultAndForOlderLibraries() throws {
+        #expect(Settings().globalShortcuts == true)
+        let old = try JSONDecoder().decode(Settings.self, from: Data(#"{"isMuted": true}"#.utf8))
+        #expect(old.globalShortcuts == true)
+    }
+
     @Test func defaultSettingsMatchSpec() {
         let settings = Settings()
         #expect(settings.isMuted == true)

@@ -1,12 +1,15 @@
 import AppKit
 
-/// Borderless window sitting at the desktop level (below the desktop icons) on every Space.
+/// Borderless window sitting at the desktop level (below the desktop icons) on every Space,
+/// covering one screen.
 @MainActor
 final class WallpaperWindow: NSWindow {
     let playerView = NSView()
-    private var screenObserver: NSObjectProtocol?
+    /// The display this window covers; stays stable while the screen is connected.
+    let displayID: CGDirectDisplayID
 
     init(screen: NSScreen) {
+        displayID = screen.displayID
         super.init(contentRect: screen.frame, styleMask: .borderless, backing: .buffered, defer: false)
         level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.desktopWindow)))
         collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle]
@@ -20,22 +23,18 @@ final class WallpaperWindow: NSWindow {
         playerView.layer?.backgroundColor = NSColor.black.cgColor
         contentView = playerView
         setFrame(screen.frame, display: false)
-
-        screenObserver = NotificationCenter.default.addObserver(
-            forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main
-        ) { [weak self] _ in
-            MainActor.assumeIsolated {
-                self?.fitToMainScreen()
-            }
-        }
     }
 
     override var canBecomeKey: Bool { false }
     override var canBecomeMain: Bool { false }
 
-    /// The screen holding the menu bar (`NSScreen.main` would follow keyboard focus instead).
-    func fitToMainScreen() {
-        guard let screen = NSScreen.screens.first else { return }
+    func fit(to screen: NSScreen) {
         setFrame(screen.frame, display: true)
+    }
+}
+
+extension NSScreen {
+    var displayID: CGDirectDisplayID {
+        (deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)?.uint32Value ?? 0
     }
 }

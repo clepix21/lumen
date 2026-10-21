@@ -81,6 +81,19 @@ import Testing
         #expect(try contents(paths.thumbnails).isEmpty)
     }
 
+    @Test func rejectsVideoWithoutDuration() async throws {
+        let paths = try makeTempPaths()
+        let source = try makeSourceDir().appendingPathComponent("empty.mp4")
+        try await TestVideoFactory.make(at: source, seconds: 1.0 / 30)
+        let importer = VideoImporter(paths: paths, minimumDuration: 0.5)
+
+        await #expect(throws: ImportError.notPlayable) {
+            _ = try await importer.importVideo(from: source) { _ in }
+        }
+        #expect(try contents(paths.videos).isEmpty)
+        #expect(try contents(paths.thumbnails).isEmpty)
+    }
+
     @Test func failedCopyLeavesNothing() async throws {
         let paths = try makeTempPaths()
         let missing = try makeSourceDir().appendingPathComponent("missing.mp4")

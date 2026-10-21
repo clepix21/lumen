@@ -65,7 +65,12 @@ public struct VideoImporter: Sendable {
             let size = naturalSize.applying(transform)
             let duration = try await asset.load(.duration).seconds
             let isHEVC = formats.contains { CMFormatDescriptionGetMediaSubType($0) == kCMVideoCodecType_HEVC }
-            try await writeThumbnail(for: asset, duration: duration, to: thumbnail)
+            // The thumbnail is cosmetic: a playable video is kept even if it cannot be made.
+            do {
+                try await writeThumbnail(for: asset, duration: duration, to: thumbnail)
+            } catch {
+                try? FileManager.default.removeItem(at: thumbnail)
+            }
 
             return Video(
                 id: id,

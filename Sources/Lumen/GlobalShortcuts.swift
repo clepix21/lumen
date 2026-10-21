@@ -1,6 +1,9 @@
 import Carbon.HIToolbox
+import os
 
-/// System-wide shortcuts (⌃⌥⌘P, ⌃⌥⌘→, ⌃⌥⌘←, ⌃⌥⌘M) through Carbon hot keys, which need no
+private let log = Logger(subsystem: "local.lumen.Lumen", category: "shortcuts")
+
+/// System-wide shortcuts (⌃⌥⌘P, ⌃⌥⌘→, ⌃⌥⌘←, ⌃⌥⌘S) through Carbon hot keys, which need no
 /// accessibility permission: macOS only tells Lumen when one of these exact keys is pressed.
 @MainActor
 final class GlobalShortcuts {
@@ -12,7 +15,7 @@ final class GlobalShortcuts {
             case .togglePause: kVK_ANSI_P
             case .next: kVK_RightArrow
             case .previous: kVK_LeftArrow
-            case .toggleMute: kVK_ANSI_M
+            case .toggleMute: kVK_ANSI_S
             }
         }
     }
@@ -34,9 +37,11 @@ final class GlobalShortcuts {
             var ref: EventHotKeyRef?
             let id = EventHotKeyID(signature: Self.signature, id: action.rawValue)
             // A shortcut already taken by another app is skipped; the others still work.
-            if RegisterEventHotKey(UInt32(action.keyCode), modifiers, id, GetApplicationEventTarget(), 0, &ref) == noErr,
-               let ref {
+            let status = RegisterEventHotKey(UInt32(action.keyCode), modifiers, id, GetApplicationEventTarget(), 0, &ref)
+            if status == noErr, let ref {
                 hotKeys.append(ref)
+            } else {
+                log.error("Shortcut \(String(describing: action), privacy: .public) unavailable (status \(status))")
             }
         }
     }

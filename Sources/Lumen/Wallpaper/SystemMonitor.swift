@@ -9,17 +9,17 @@ final class SystemMonitor {
     var onChange: ((PlaybackConditions) -> Void)?
     private(set) var conditions = PlaybackConditions()
 
-    private let window: NSWindow
+    private var windows: [NSWindow] = []
     private var observers: [(NotificationCenter, NSObjectProtocol)] = []
     private var powerSource: CFRunLoopSource?
 
-    init(window: NSWindow) {
-        self.window = window
-        conditions.isOccluded = !window.occlusionState.contains(.visible)
+    /// `windows` are the wallpaper windows; the desktop counts as hidden only when all are covered.
+    init(windows: [NSWindow]) {
         conditions.isOnBattery = Self.isOnBattery()
 
-        observe(NotificationCenter.default, NSWindow.didChangeOcclusionStateNotification, object: window) { monitor in
-            monitor.conditions.isOccluded = !monitor.window.occlusionState.contains(.visible)
+        // Occlusion is checked for whichever window changed, against the current list.
+        observe(NotificationCenter.default, NSWindow.didChangeOcclusionStateNotification) { monitor in
+            monitor.updateOcclusion()
         }
 
         let workspace = NSWorkspace.shared.notificationCenter
@@ -35,6 +35,18 @@ final class SystemMonitor {
         observe(distributed, Notification.Name("com.apple.screensaver.didstop")) { $0.conditions.isScreenSaverRunning = false }
 
         startPowerNotifications()
+        setWindows(windows)
+    }
+
+    /// Replaces the watched wallpaper windows (screens plugged in or out).
+    func setWindows(_ windows: [NSWindow]) {
+        self.windows = windows
+        updateOcclusion()
+        onChange?(conditions)
+    }
+
+    private func updateOcclusion() {
+        conditions.isOccluded = !windows.isEmpty && windows.allSatisfy { !$0.occlusionState.contains(.visible) }
     }
 
     private func observe(

@@ -71,6 +71,32 @@ func makeVideo(name: String = "Plage") -> Video {
         #expect(try Data(contentsOf: asideURL) == original)
     }
 
+    @Test func libraryWithMissingKeysKeepsItsDataAndUsesDefaults() throws {
+        let paths = try makeTempPaths()
+        let id = UUID()
+        let json = """
+        {
+          "videos": [{
+            "id": "\(id.uuidString)", "name": "Plage", "fileName": "a.mp4", "duration": 10,
+            "width": 1920, "height": 1080, "byteSize": 100, "isHEVC": false,
+            "importedAt": "2026-10-21T10:00:00Z"
+          }],
+          "settings": { "isMuted": false }
+        }
+        """
+        try Data(json.utf8).write(to: paths.libraryFile)
+
+        let library = LibraryStore(paths: paths).load()
+
+        #expect(library.videos.map(\.id) == [id])
+        #expect(library.playlists.isEmpty)
+        #expect(library.selection == .none)
+        #expect(library.settings.isMuted == false)
+        #expect(library.settings.launchAtLogin == true)
+        #expect(library.settings.pauseWhenOccluded == true)
+        #expect(FileManager.default.fileExists(atPath: paths.libraryFile.path))
+    }
+
     @Test func defaultSettingsMatchSpec() {
         let settings = Settings()
         #expect(settings.isMuted == true)

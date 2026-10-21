@@ -108,6 +108,25 @@ import Testing
         #expect(ids.count == 3)
     }
 
+    @Test func placeInSlotLinksSourceAndReportsChanges() throws {
+        let editor = try makeAerials()
+        let first = fileManager.temporaryDirectory.appendingPathComponent("first-\(UUID().uuidString).mov")
+        let second = fileManager.temporaryDirectory.appendingPathComponent("second-\(UUID().uuidString).mov")
+        try Data("first".utf8).write(to: first)
+        try Data("second".utf8).write(to: second)
+
+        #expect(!editor.slotHolds(first))
+        #expect(try editor.placeInSlot(first) == true)
+        #expect(editor.slotHolds(first))
+        #expect(try editor.placeInSlot(first) == false)
+        #expect(try editor.placeInSlot(second) == true)
+        #expect(editor.slotHolds(second))
+        #expect(!editor.slotHolds(first))
+        #expect(try Data(contentsOf: editor.slotURL) == Data("second".utf8))
+        let leftovers = try fileManager.contentsOfDirectory(atPath: editor.slotURL.deletingLastPathComponent().path)
+        #expect(leftovers == [editor.slotURL.lastPathComponent])
+    }
+
     @Test func uninstallWithoutInstallDoesNothing() throws {
         let editor = try makeAerials()
         let before = try Data(contentsOf: editor.manifestURL)

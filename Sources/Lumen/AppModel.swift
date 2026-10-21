@@ -79,6 +79,9 @@ final class AppModel: ObservableObject {
             self?.applyPlaybackPolicy()
             self?.onConditionsChange?(conditions)
         }
+        // Attach the screens before loading: a player that starts without a visible screen
+        // keeps rendering audio even while muted (measured: ~5% CPU instead of 1.4%).
+        regroupScreens()
         restoreSelection()
         regroupScreens()
     }

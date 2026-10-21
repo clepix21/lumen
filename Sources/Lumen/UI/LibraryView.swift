@@ -17,6 +17,9 @@ struct LibraryView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 hero
+                if !model.library.screenLayout.sameOnAllScreens, model.screenChoices.count > 1 {
+                    screenPicker
+                }
                 section("Mes vidéos") {
                     AddTile(action: pickVideos)
                     ForEach(model.library.videos) { video in
@@ -58,6 +61,36 @@ struct LibraryView: View {
     }
 
     // MARK: - Hero
+
+    /// Which screen a click applies to, when screens show different things.
+    private var screenPicker: some View {
+        HStack(spacing: 10) {
+            Text("Écran").font(.system(size: 12, weight: .semibold))
+            Picker("Écran", selection: Binding(
+                get: { model.targetScreenKey ?? model.screenChoices.first?.id ?? "" },
+                set: { key in model.targetScreenKey = key == model.screenChoices.first?.id ? nil : key }
+            )) {
+                ForEach(model.screenChoices) { screen in
+                    Text(screen.isMain ? "\(screen.name) (principal)" : screen.name).tag(screen.id)
+                }
+            }
+            .labelsHidden()
+            .pickerStyle(.segmented)
+            .fixedSize()
+        }
+        .padding(.horizontal, 24)
+        .padding(.top, 12)
+    }
+
+    /// What the screen chosen in the picker shows (the main screen by default).
+    private var targetSelection: Selection {
+        model.selection(forScreen: model.targetScreenKey)
+    }
+
+    /// Outlined when it is on the chosen screen (the playing video, for the main screen).
+    private func isShowing(_ video: Video) -> Bool {
+        model.targetScreenKey == nil ? model.currentVideoID == video.id : targetSelection == .video(video.id)
+    }
 
     private var hero: some View {
         ZStack(alignment: .bottomLeading) {
@@ -117,7 +150,7 @@ struct LibraryView: View {
             model.play(videoID: video.id)
         } label: {
             VStack(alignment: .leading, spacing: 4) {
-                ThumbnailTile(url: model.thumbnailURL(for: video.id), isCurrent: model.currentVideoID == video.id,
+                ThumbnailTile(url: model.thumbnailURL(for: video.id), isCurrent: isShowing(video),
                               previewVideoURL: model.importer.fileURL(for: video))
                 Text(video.name).font(.system(size: 11)).lineLimit(1).opacity(0.8)
             }
@@ -150,7 +183,7 @@ struct LibraryView: View {
         } label: {
             VStack(alignment: .leading, spacing: 4) {
                 ThumbnailTile(url: playlist.videoIDs.first.map(model.thumbnailURL(for:)),
-                              isCurrent: model.library.selection == .playlist(playlist.id))
+                              isCurrent: targetSelection == .playlist(playlist.id))
                 Text("\(playlist.name) · \(playlist.videoIDs.count)").font(.system(size: 11)).lineLimit(1).opacity(0.8)
             }
             .contentShape(Rectangle())

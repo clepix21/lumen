@@ -31,6 +31,8 @@ final class SystemMonitor {
         let distributed = DistributedNotificationCenter.default()
         observe(distributed, Notification.Name("com.apple.screenIsLocked")) { $0.conditions.isScreenLocked = true }
         observe(distributed, Notification.Name("com.apple.screenIsUnlocked")) { $0.conditions.isScreenLocked = false }
+        observe(distributed, Notification.Name("com.apple.screensaver.didstart")) { $0.conditions.isScreenSaverRunning = true }
+        observe(distributed, Notification.Name("com.apple.screensaver.didstop")) { $0.conditions.isScreenSaverRunning = false }
 
         startPowerNotifications()
     }

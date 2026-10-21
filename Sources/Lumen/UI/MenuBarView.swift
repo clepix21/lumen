@@ -43,6 +43,18 @@ struct MenuBarView: View {
             toggle("Lecture aléatoire", \.shuffle)
             Divider()
 
+            if let update = model.availableUpdate {
+                Button {
+                    NSWorkspace.shared.open(update.pageURL)
+                } label: {
+                    Label("Mise à jour disponible : \(update.version)", systemImage: "arrow.down.circle.fill")
+                        .font(.system(size: 12, weight: .medium))
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(Color.accentColor)
+                Divider()
+            }
+
             HStack {
                 Button("Ouvrir la fenêtre…", action: openWindow)
                 Spacer()

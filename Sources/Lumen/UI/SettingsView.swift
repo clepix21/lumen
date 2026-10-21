@@ -22,6 +22,15 @@ struct SettingsView: View {
                 }
                 group("Système") {
                     toggle("Lancer au démarrage du Mac", \.launchAtLogin)
+                    toggle("Vérifier les mises à jour", \.checkForUpdates)
+                    if let update = model.availableUpdate {
+                        Button("Télécharger la version \(update.version)") {
+                            NSWorkspace.shared.open(update.pageURL)
+                        }
+                    } else {
+                        Text("Version \(AppModel.appVersion). Lumen consulte GitHub une fois par jour, sans envoyer de données.")
+                            .font(.system(size: 11)).opacity(0.6)
+                    }
                     if #available(macOS 26, *) {
                         toggle("Écran de verrouillage animé", \.lockScreenEnabled)
                         Text("La vidéo du bureau s'affiche aussi sur l'écran de verrouillage, sans le son.")

@@ -103,6 +103,10 @@ Deux particularités viennent de la compilation sans Xcode :
 
 La conception et le plan de construction sont dans [`docs/superpowers/`](docs/superpowers/).
 
+## Licence
+
+Lumen est distribué sous [licence MIT](LICENSE).
+
 ## Remerciements
 
 Le fonctionnement de l'écran de verrouillage s'appuie sur l'étude de [LivePaper](https://github.com/Raunik2/LivePaper) (licence MIT).

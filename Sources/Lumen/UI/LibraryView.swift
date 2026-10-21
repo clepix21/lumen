@@ -51,6 +51,7 @@ struct LibraryView: View {
             Button("Supprimer", role: .destructive) {
                 if let video = deleting.wrappedValue { model.deleteVideo(id: video.id) }
             }
+            Button("Annuler", role: .cancel) {}
         } message: {
             Text("La copie de la vidéo dans Lumen sera supprimée. Le fichier d'origine n'est pas touché.")
         }

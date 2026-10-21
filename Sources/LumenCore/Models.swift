@@ -79,6 +79,8 @@ public struct Library: Codable, Equatable, Sendable {
     public var playlists: [Playlist]
     public var selection: Selection
     public var settings: Settings
+    /// What each screen shows when several are connected.
+    public var screenLayout = ScreenLayout()
 
     public static let empty = Library(videos: [], playlists: [], selection: .none, settings: Settings())
 
@@ -96,6 +98,7 @@ public struct Library: Codable, Equatable, Sendable {
         playlists = try container.decodeIfPresent([Playlist].self, forKey: .playlists) ?? []
         selection = try container.decodeIfPresent(Selection.self, forKey: .selection) ?? .none
         settings = try container.decodeIfPresent(Settings.self, forKey: .settings) ?? Settings()
+        screenLayout = try container.decodeIfPresent(ScreenLayout.self, forKey: .screenLayout) ?? ScreenLayout()
     }
 
     public func video(id: UUID) -> Video? {
@@ -113,6 +116,7 @@ public struct Library: Codable, Equatable, Sendable {
     /// Removes a video everywhere; clears the selection if nothing is left to show.
     public mutating func removeVideo(id: UUID) {
         videos.removeAll { $0.id == id }
+        screenLayout.forget(videoID: id)
         for index in playlists.indices {
             playlists[index].videoIDs.removeAll { $0 == id }
         }
@@ -145,6 +149,7 @@ public struct Library: Codable, Equatable, Sendable {
 
     public mutating func deletePlaylist(id: UUID) {
         playlists.removeAll { $0.id == id }
+        screenLayout.forget(playlistID: id)
         if selection == .playlist(id) {
             selection = .none
         }

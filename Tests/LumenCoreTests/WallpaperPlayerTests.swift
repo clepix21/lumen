@@ -60,6 +60,35 @@ import Testing
         #expect(await waitUntil { player.audioTracksEnabled == [false] })
     }
 
+    @Test func extraScreensShareTheSinglePlayer() {
+        let first = NSView(), second = NSView()
+        let player = WallpaperPlayer(hostView: first)
+
+        player.addHostView(second)
+
+        #expect(player.hostLayers.count == 2)
+        #expect(Set(player.hostLayers.compactMap { $0.player.map(ObjectIdentifier.init) }).count == 1)
+        #expect(second.layer?.sublayers?.contains { $0 === player.hostLayers.last } == true)
+    }
+
+    @Test func addingTheSameViewTwiceIsIgnored() {
+        let view = NSView()
+        let player = WallpaperPlayer(hostView: view)
+        player.addHostView(view)
+        #expect(player.hostLayers.count == 1)
+    }
+
+    @Test func removedScreenLosesItsLayer() {
+        let first = NSView(), second = NSView()
+        let player = WallpaperPlayer(hostView: first)
+        player.addHostView(second)
+
+        player.removeHostView(second)
+
+        #expect(player.hostLayers.count == 1)
+        #expect(second.layer?.sublayers?.isEmpty ?? true)
+    }
+
     @Test func unmutingReenablesAudio() async throws {
         let paths = try makeTempPaths()
         let clip = paths.root.appendingPathComponent("sound.mp4")

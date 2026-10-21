@@ -5,7 +5,7 @@ import SwiftUI
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var model: AppModel?
-    private var wallpaperWindow: WallpaperWindow?
+    private var wallpaperScreens: WallpaperScreens?
     private var statusItem: NSStatusItem?
     private let popover = NSPopover()
     private var mainWindow: NSWindow?
@@ -13,12 +13,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
-        guard let screen = NSScreen.screens.first else { return }
 
         let paths = LumenPaths.standard()
         let isFirstLaunch = !FileManager.default.fileExists(atPath: paths.libraryFile.path)
-        let window = WallpaperWindow(screen: screen)
-        let model = AppModel(paths: paths, window: window)
+        let screens = WallpaperScreens()
+        let model = AppModel(paths: paths, screens: screens)
         let lockScreen = Self.makeLockScreenController(paths: paths, model: model)
         model.onSettingsChange = { [weak model] old, new in
             if new.launchAtLogin != old.launchAtLogin {
@@ -28,7 +27,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 lockScreen?.setEnabled(new.lockScreenEnabled, current: model?.currentVideo)
             }
         }
-        wallpaperWindow = window
+        wallpaperScreens = screens
         self.model = model
         lockScreenController = lockScreen
 

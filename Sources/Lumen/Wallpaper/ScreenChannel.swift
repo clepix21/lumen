@@ -98,8 +98,9 @@ final class ScreenChannel {
     private func show(videoID: UUID, loop: Bool) {
         guard let video = library().video(id: videoID) else { return }
         currentVideoID = videoID
-        player?.load(url: fileURL(video), loop: loop)
+        // Show the screens before loading: a player without a visible screen renders audio.
         updateVisibility()
+        player?.load(url: fileURL(video), loop: loop)
     }
 
     private func updateVisibility() {

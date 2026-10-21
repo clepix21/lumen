@@ -1,15 +1,17 @@
 import AppKit
+import Combine
 import LumenCore
 import SwiftUI
 
 @MainActor
-final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSPopoverDelegate {
     private var model: AppModel?
     private var wallpaperScreens: WallpaperScreens?
     private var statusItem: NSStatusItem?
     private let popover = NSPopover()
     private var mainWindow: NSWindow?
     private var lockScreenController: LockScreenController?
+    private var messageSubscription: AnyCancellable?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
@@ -32,6 +34,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         lockScreenController = lockScreen
 
         setUpStatusItem(model: model)
+        // Messages are shown by the main window; open it if one arrives while it is closed.
+        messageSubscription = model.$lastError
+            .receive(on: RunLoop.main)
+            .sink { [weak self] message in
+                guard message != nil, self?.mainWindow?.isVisible != true else { return }
+                self?.showMainWindow()
+            }
 
         if isFirstLaunch {
             Self.applyLoginItem(model.library.settings.launchAtLogin, model: model)
@@ -60,19 +69,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         statusItem = item
 
         popover.behavior = .transient
-        popover.contentViewController = NSHostingController(rootView: MenuBarView(model: model) { [weak self] in
-            self?.popover.performClose(nil)
-            self?.showMainWindow()
-        })
+        popover.delegate = self
     }
 
     @objc private func togglePopover(_ sender: NSStatusBarButton) {
+        guard let model else { return }
         if popover.isShown {
             popover.performClose(sender)
         } else {
+            // Built on demand and released on close, so it does not refresh while hidden.
+            popover.contentViewController = NSHostingController(rootView: MenuBarView(model: model) { [weak self] in
+                self?.popover.performClose(nil)
+                self?.showMainWindow()
+            })
             popover.show(relativeTo: sender.bounds, of: sender, preferredEdge: .minY)
             popover.contentViewController?.view.window?.makeKey()
         }
+    }
+
+    func popoverDidClose(_ notification: Notification) {
+        popover.contentViewController = nil
     }
 
     // MARK: - Main window
@@ -93,23 +109,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             window.isMovableByWindowBackground = true
             window.isReleasedWhenClosed = false
             window.appearance = NSAppearance(named: .darkAqua)
-            let content = FileDropHostingView(rootView: MainWindowView(model: model))
-            content.onDropFiles = { [weak model] urls in
-                Task { await model?.importVideos(urls) }
-            }
-            content.onTargetedChange = { [weak model] targeted in model?.isDropTargeted = targeted }
-            window.contentView = content
             window.delegate = self
             window.center()
             mainWindow = window
+        }
+        // The content is released on close; rebuild it when the window comes back.
+        if !(mainWindow?.contentView is FileDropHostingView<MainWindowView>) {
+            mainWindow?.contentView = makeMainContent(model: model)
         }
         mainWindow?.makeKeyAndOrderFront(nil)
         NSApp.activate()
     }
 
+    private func makeMainContent(model: AppModel) -> NSView {
+        let content = FileDropHostingView(rootView: MainWindowView(model: model))
+        content.onDropFiles = { [weak model] urls in
+            Task { await model?.importVideos(urls) }
+        }
+        content.onTargetedChange = { [weak model] targeted in model?.isDropTargeted = targeted }
+        return content
+    }
+
     func windowWillClose(_ notification: Notification) {
-        guard (notification.object as? NSWindow) === mainWindow else { return }
+        guard let window = notification.object as? NSWindow, window === mainWindow else { return }
         NSApp.setActivationPolicy(.accessory)
+        // Release the SwiftUI content so it stops refreshing while the window is closed.
+        window.contentView = nil
     }
 
     // MARK: - Lock screen

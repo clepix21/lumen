@@ -33,8 +33,16 @@ final class AppModel: ObservableObject {
     let importer: VideoImporter
     private let store: LibraryStore
     private let screens: WallpaperScreens
+    /// Plays the main screen's wallpaper (and every screen showing the same thing).
     private let player: WallpaperPlayer
+    private var primaryWindows: [String: WallpaperWindow] = [:]
+    /// Players for groups of other screens that show something else (always muted).
+    private var channels: [ScreenChannel] = []
     private let monitor: SystemMonitor
+    /// Screen the next click in the library applies to; `nil` means the main screen.
+    @Published var targetScreenKey: String?
+    /// Bumped when screens are plugged in or out, so screen pickers refresh.
+    @Published private(set) var screensVersion = 0
     /// Pause asked by the user; the buttons follow it, not automatic energy pauses.
     @Published private(set) var userPaused = false
     /// Unplayable videos skipped in a row; stops a playlist where nothing plays.
@@ -46,17 +54,19 @@ final class AppModel: ObservableObject {
         importer = VideoImporter(paths: paths)
         library = store.load()
         self.screens = screens
-        // One player for every screen: the video is decoded once.
-        player = WallpaperPlayer(hostView: screens.windows.first?.playerView ?? NSView())
-        for window in screens.windows.dropFirst() {
-            player.addHostView(window.playerView)
-        }
+        // Screens showing the same thing share this player, so the video is decoded once.
+        let placeholder = NSView()
+        player = WallpaperPlayer(hostView: placeholder)
+        player.removeHostView(placeholder)
         monitor = SystemMonitor(windows: screens.windows)
-        screens.onChange = { [weak self] added, removed in
+        screens.onChange = { [weak self] _, _ in
             guard let self else { return }
-            for window in removed { self.player.removeHostView(window.playerView) }
-            for window in added { self.player.addHostView(window.playerView) }
             self.monitor.setWindows(self.screens.windows)
+            if let target = self.targetScreenKey, !self.screens.windows.contains(where: { $0.screenKey == target }) {
+                self.targetScreenKey = nil
+            }
+            self.screensVersion += 1
+            self.regroupScreens()
         }
 
         player.setMuted(library.settings.isMuted)
@@ -70,6 +80,96 @@ final class AppModel: ObservableObject {
             self?.onConditionsChange?(conditions)
         }
         restoreSelection()
+        regroupScreens()
+    }
+
+    // MARK: - Screens
+
+    struct ScreenChoice: Identifiable, Equatable {
+        let id: String
+        let name: String
+        let isMain: Bool
+    }
+
+    /// Connected screens, main screen first.
+    var screenChoices: [ScreenChoice] {
+        screens.windows.enumerated().map { ScreenChoice(id: $1.screenKey, name: $1.screenName, isMain: $0 == 0) }
+    }
+
+    /// The secondary screen a click applies to, when screens may show different things.
+    private var targetSecondaryScreen: String? {
+        guard !library.screenLayout.sameOnAllScreens, let target = targetScreenKey,
+              target != screens.windows.first?.screenKey,
+              screens.windows.contains(where: { $0.screenKey == target }) else { return nil }
+        return target
+    }
+
+    /// What a screen shows (the main screen shows the library's selection).
+    func selection(forScreen key: String?) -> Selection {
+        guard let key, key != screens.windows.first?.screenKey, !library.screenLayout.sameOnAllScreens else {
+            return library.selection
+        }
+        return library.screenLayout.overrides[key] ?? library.selection
+    }
+
+    func setSameOnAllScreens(_ same: Bool) {
+        library.screenLayout.sameOnAllScreens = same
+        save()
+        regroupScreens()
+    }
+
+    /// Assigns screens to the main player or to channels from the library's screen layout.
+    private func regroupScreens() {
+        let windows = screens.windows
+        let byKey = Dictionary(windows.map { ($0.screenKey, $0) }, uniquingKeysWith: { first, _ in first })
+        let groups = library.screenLayout.groups(screens: windows.map(\.screenKey), mainSelection: library.selection)
+
+        hostPrimary(on: (groups.first?.screenIDs ?? []).compactMap { byKey[$0] })
+
+        var kept: [ScreenChannel] = []
+        for group in groups.dropFirst() {
+            let targets = group.screenIDs.compactMap { byKey[$0] }
+            if let channel = channels.first(where: { $0.selection == group.selection }) {
+                channel.host(targets)
+                kept.append(channel)
+            } else {
+                let channel = ScreenChannel(
+                    selection: group.selection,
+                    library: { [unowned self] in self.library },
+                    fileURL: { [unowned self] in self.importer.fileURL(for: $0) }
+                )
+                channel.host(targets)
+                channel.start()
+                kept.append(channel)
+            }
+        }
+        for channel in channels where !kept.contains(where: { $0 === channel }) {
+            channel.stop()
+        }
+        channels = kept
+        applyPlaybackPolicy()
+    }
+
+    private func hostPrimary(on windows: [WallpaperWindow]) {
+        let wanted = Dictionary(windows.map { ($0.screenKey, $0) }, uniquingKeysWith: { first, _ in first })
+        for (key, window) in primaryWindows where wanted[key] == nil {
+            player.removeHostView(window.playerView)
+        }
+        for (key, window) in wanted where primaryWindows[key] == nil {
+            player.addHostView(window.playerView)
+        }
+        primaryWindows = wanted
+        updatePrimaryVisibility()
+    }
+
+    private func updatePrimaryVisibility() {
+        for window in primaryWindows.values {
+            if currentVideoID != nil {
+                window.orderFront(nil)
+            } else {
+                window.orderOut(nil)
+            }
+        }
     }
 
     // MARK: - Derived state
@@ -97,20 +197,34 @@ final class AppModel: ObservableObject {
 
     func play(videoID: UUID) {
         guard library.video(id: videoID) != nil else { return }
+        if let screen = targetSecondaryScreen {
+            library.screenLayout.overrides[screen] = .video(videoID)
+            save()
+            regroupScreens()
+            return
+        }
         library.selection = .video(videoID)
         session = nil
         userPaused = false
         save()
         show(videoID: videoID, loop: true)
+        regroupScreens()
     }
 
     func play(playlistID: UUID) {
         guard let playlist = library.playlist(id: playlistID), !playlist.videoIDs.isEmpty else { return }
+        if let screen = targetSecondaryScreen {
+            library.screenLayout.overrides[screen] = .playlist(playlistID)
+            save()
+            regroupScreens()
+            return
+        }
         library.selection = .playlist(playlistID)
         userPaused = false
         save()
         session = PlaylistSession(playlist: playlist, shuffle: library.settings.shuffle, seed: Self.seed())
         showSessionVideo()
+        regroupScreens()
     }
 
     func next() {
@@ -169,6 +283,7 @@ final class AppModel: ObservableObject {
         } else if wasCurrent {
             stopWallpaper()
         }
+        regroupScreens()
     }
 
     func renameVideo(id: UUID, to name: String) {
@@ -195,6 +310,7 @@ final class AppModel: ObservableObject {
         if wasCurrent {
             stopWallpaper()
         }
+        regroupScreens()
     }
 
     func addVideo(_ videoID: UUID, toPlaylist playlistID: UUID) {
@@ -360,7 +476,7 @@ final class AppModel: ObservableObject {
             return
         }
         currentVideoID = videoID
-        screens.show()
+        updatePrimaryVisibility()
         player.load(url: importer.fileURL(for: video), loop: loop)
         applyPlaybackPolicy()
         onCurrentVideoChange?(video)
@@ -371,7 +487,7 @@ final class AppModel: ObservableObject {
         currentVideoID = nil
         player.clear()
         player.setPlaying(false)
-        screens.hide()
+        updatePrimaryVisibility()
         isPlaying = false
         onCurrentVideoChange?(nil)
     }
@@ -379,8 +495,12 @@ final class AppModel: ObservableObject {
     private func applyPlaybackPolicy() {
         var conditions = monitor.conditions
         conditions.userPaused = userPaused
-        let play = currentVideoID != nil && PlaybackPolicy.shouldPlay(conditions, settings: library.settings)
+        let allowed = PlaybackPolicy.shouldPlay(conditions, settings: library.settings)
+        let play = currentVideoID != nil && allowed
         player.setPlaying(play)
+        for channel in channels {
+            channel.setPlaying(allowed)
+        }
         isPlaying = play
     }
 

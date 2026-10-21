@@ -60,6 +60,7 @@ struct SettingsView: View {
                 model.clearCache()
                 cacheSize.wrappedValue = model.cacheSize()
             }
+            Button("Annuler", role: .cancel) {}
         } message: {
             Text("Les versions pour l'écran de verrouillage seront recréées si besoin.")
         }

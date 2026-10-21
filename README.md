@@ -26,6 +26,8 @@ Lumen lit tes propres vidéos en fond d'écran, derrière les icônes du bureau,
 - **Fenêtre principale** façon Wallper, et **menu dans la barre des menus** pour les gestes rapides : pause, son, vidéo suivante.
 - **Lancement au démarrage** du Mac.
 - **Vider le cache** depuis Réglages › Stockage : supprime les versions préparées pour l'écran de verrouillage et les fichiers inutilisés, sans toucher à tes vidéos.
+- **Aperçu au survol** : passe le pointeur sur une vignette pour voir la vidéo bouger, sans le son. Le lecteur n'existe que pendant le survol.
+- **Mises à jour** : Lumen vérifie une fois par jour s'il existe une nouvelle version sur GitHub et l'indique dans le menu de la barre des menus. C'est une seule requête anonyme à l'API publique de GitHub, sans aucune donnée envoyée, et elle se désactive dans Réglages.
 
 ## Consommation
 

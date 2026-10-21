@@ -94,6 +94,20 @@ import Testing
         #expect(try contents(paths.thumbnails).isEmpty)
     }
 
+    @Test func playableVideoIsKeptWhenItsThumbnailFails() async throws {
+        let paths = try makeTempPaths()
+        let source = try makeSourceDir().appendingPathComponent("Plage.mp4")
+        try await TestVideoFactory.make(at: source)
+        try fileManager.setAttributes([.posixPermissions: 0o555], ofItemAtPath: paths.thumbnails.path)
+        defer { try? fileManager.setAttributes([.posixPermissions: 0o755], ofItemAtPath: paths.thumbnails.path) }
+        let importer = VideoImporter(paths: paths)
+
+        let video = try await importer.importVideo(from: source) { _ in }
+
+        #expect(fileManager.fileExists(atPath: importer.fileURL(for: video).path))
+        #expect(!fileManager.fileExists(atPath: importer.thumbnailURL(for: video.id).path))
+    }
+
     @Test func failedCopyLeavesNothing() async throws {
         let paths = try makeTempPaths()
         let missing = try makeSourceDir().appendingPathComponent("missing.mp4")

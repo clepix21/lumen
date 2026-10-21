@@ -114,7 +114,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private static func makeLockScreenController(paths: LumenPaths, model: AppModel) -> LockScreenController? {
         guard #available(macOS 26, *) else { return nil }
         let controller = LockScreenController(
-            editor: .standard(), cache: LockScreenCache(paths: paths), importer: model.importer
+            editor: .standard(), cache: LockScreenCache(paths: paths), importer: model.importer,
+            restartAgent: restartWallpaperAgent
         )
         controller.onNotice = { [weak model] message in model?.lastError = message }
         model.onCurrentVideoChange = { [weak controller] video in controller?.desktopVideoDidChange(video) }
@@ -123,6 +124,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         controller.conditionsDidChange(model.conditions)
         controller.setEnabled(model.library.settings.lockScreenEnabled, current: model.currentVideo)
         return controller
+    }
+
+    /// `WallpaperAgent` only re-reads a swapped video after a restart; launchd relaunches it.
+    private static func restartWallpaperAgent() {
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: "/usr/bin/killall")
+        task.arguments = ["WallpaperAgent"]
+        task.standardOutput = FileHandle.nullDevice
+        task.standardError = FileHandle.nullDevice
+        task.terminationHandler = { _ in }
+        try? task.run()
     }
 
     // MARK: - Login item

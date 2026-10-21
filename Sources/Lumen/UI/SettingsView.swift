@@ -20,6 +20,18 @@ struct SettingsView: View {
                     toggle("Pause quand une app est en plein écran", \.pauseWhenOccluded)
                     toggle("Pause sur batterie", \.pauseOnBattery)
                 }
+                group("Écrans") {
+                    Toggle("Même vidéo sur tous les écrans", isOn: Binding(
+                        get: { model.library.screenLayout.sameOnAllScreens },
+                        set: { model.setSameOnAllScreens($0) }
+                    ))
+                    .toggleStyle(.switch)
+                    .font(.system(size: 12))
+                    Text(model.screenChoices.count > 1
+                         ? "Désactivé, choisis l'écran au-dessus de « Mes vidéos » avant de cliquer sur une vidéo."
+                         : "Un seul écran est branché pour le moment.")
+                        .font(.system(size: 11)).opacity(0.6)
+                }
                 group("Système") {
                     toggle("Lancer au démarrage du Mac", \.launchAtLogin)
                     toggle("Vérifier les mises à jour", \.checkForUpdates)

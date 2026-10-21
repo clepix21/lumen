@@ -27,6 +27,7 @@ let package = Package(
         .testTarget(
             name: "LumenCoreTests",
             dependencies: ["LumenCore"],
+            resources: [.copy("Fixtures")],
             swiftSettings: testSwiftSettings
         ),
     ]

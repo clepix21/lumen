@@ -12,6 +12,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSPo
     private var mainWindow: NSWindow?
     private var lockScreenController: LockScreenController?
     private var messageSubscription: AnyCancellable?
+    private let shortcuts = GlobalShortcuts()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
@@ -28,7 +29,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSPo
             if new.lockScreenEnabled != old.lockScreenEnabled {
                 lockScreen?.setEnabled(new.lockScreenEnabled, current: model?.currentVideo)
             }
+            if new.globalShortcuts != old.globalShortcuts {
+                self.shortcuts.setEnabled(new.globalShortcuts)
+            }
         }
+        shortcuts.onAction = { [weak model] action in
+            switch action {
+            case .togglePause: model?.togglePause()
+            case .next: model?.next()
+            case .previous: model?.previous()
+            case .toggleMute: model?.toggleMute()
+            }
+        }
+        shortcuts.setEnabled(model.library.settings.globalShortcuts)
         wallpaperScreens = screens
         self.model = model
         lockScreenController = lockScreen

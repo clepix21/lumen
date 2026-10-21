@@ -29,7 +29,7 @@ final class LockScreenProbe {
         return condition()
     }
 
-    func makeSetup(delay: Duration = .zero, conversionNeverEnds: Bool = false) throws -> Setup {
+    func makeSetup(delay: Duration = .zero, conversionNeverEnds: Bool = false, conversionTime: UInt64 = 0) throws -> Setup {
         let paths = try makeTempPaths()
         let aerials = paths.root.appendingPathComponent("aerials", isDirectory: true)
         try FileManager.default.createDirectory(at: aerials.appendingPathComponent("manifest"), withIntermediateDirectories: true)
@@ -46,6 +46,9 @@ final class LockScreenProbe {
                 do {
                     if conversionNeverEnds {
                         try await Task.sleep(nanoseconds: 60_000_000_000)
+                    }
+                    if conversionTime > 0 {
+                        try await Task.sleep(nanoseconds: conversionTime)
                     }
                     try FileManager.default.copyItem(at: source, to: destination)
                 } catch {
@@ -144,6 +147,19 @@ final class LockScreenProbe {
 
         let cached = LockScreenCache(paths: setup.paths).cachedURL(for: video)
         #expect(await waitUntil { setup.editor.slotHolds(cached) })
+    }
+
+    @Test func videoDeletedDuringConversionLeavesNoCache() async throws {
+        let setup = try makeSetup(conversionTime: 300_000_000)
+        let video = try storedVideo(setup, hevc: false)
+        setup.controller.setEnabled(true, current: video)
+        #expect(await waitUntil { setup.probe.conversionsStarted == 1 })
+
+        setup.controller.videoWasDeleted(video)
+        try await Task.sleep(nanoseconds: 600_000_000)
+
+        let cached = LockScreenCache(paths: setup.paths).cachedURL(for: video)
+        #expect(!FileManager.default.fileExists(atPath: cached.path))
     }
 
     @Test func disablingUninstalls() async throws {

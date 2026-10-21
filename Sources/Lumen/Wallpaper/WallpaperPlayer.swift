@@ -11,6 +11,8 @@ final class WallpaperPlayer {
     private var looper: AVPlayerLooper?
     private var endObserver: NSObjectProtocol?
     private var wantsPlaying = false
+    private var isMuted = false
+    private var currentItemObservation: NSKeyValueObservation?
 
     init(hostView: NSView) {
         player.preventsDisplaySleepDuringVideoPlayback = false
@@ -21,6 +23,13 @@ final class WallpaperPlayer {
         hostView.wantsLayer = true
         playerLayer.frame = hostView.bounds
         hostView.layer?.addSublayer(playerLayer)
+
+        // The looper swaps items as it loops; each new item must get the mute state.
+        currentItemObservation = player.observe(\.currentItem) { [weak self] _, _ in
+            DispatchQueue.main.async {
+                self?.applyAudioState()
+            }
+        }
     }
 
     func load(url: URL, loop: Bool) {
@@ -53,7 +62,18 @@ final class WallpaperPlayer {
     }
 
     func setMuted(_ muted: Bool) {
+        isMuted = muted
         player.isMuted = muted
+        applyAudioState()
+    }
+
+    /// Muting alone still decodes and mixes audio; disabling the audio tracks saves that CPU.
+    private func applyAudioState() {
+        for item in player.items() {
+            for track in item.tracks where track.assetTrack?.mediaType == .audio {
+                track.isEnabled = !isMuted
+            }
+        }
     }
 
     /// Releases the current item so nothing is decoded.

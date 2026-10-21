@@ -17,6 +17,7 @@ public final class LockScreenController {
     private let importer: VideoImporter
     private let convert: Converter
     private let restartAgent: @MainActor () -> Void
+    private let isLumenSelected: @MainActor () -> Bool
     private let slotUpdateDelay: Duration
 
     private var isEnabled = false
@@ -33,6 +34,9 @@ public final class LockScreenController {
         editor: AerialManifestEditor, cache: LockScreenCache, importer: VideoImporter,
         convert: @escaping Converter = { try await HEVCConverter.convert($0, to: $1) },
         restartAgent: @escaping @MainActor () -> Void,
+        isLumenSelected: @escaping @MainActor () -> Bool = {
+            WallpaperSelection.isSelected(assetID: AerialManifestEditor.lumenAssetID)
+        },
         slotUpdateDelay: Duration = .seconds(30)
     ) {
         self.editor = editor
@@ -40,6 +44,7 @@ public final class LockScreenController {
         self.importer = importer
         self.convert = convert
         self.restartAgent = restartAgent
+        self.isLumenSelected = isLumenSelected
         self.slotUpdateDelay = slotUpdateDelay
     }
 
@@ -129,16 +134,17 @@ public final class LockScreenController {
 
     private func apply(source: URL, preview: URL) {
         do {
-            var changed = false
+            var installed = false
             if try !editor.isInstalled() {
                 try editor.install(previewImageURL: preview)
-                changed = true
+                installed = true
                 onNotice?("Choisis « Lumen » une fois dans Réglages Système › Fond d'écran pour l'écran de verrouillage.")
             }
-            if try editor.placeInSlot(source) {
-                changed = true
-            }
-            guard changed else { return }
+            let slotChanged = try editor.placeInSlot(source)
+            // A new entry must be loaded to appear in System Settings. A new video only matters
+            // while Lumen is the chosen wallpaper; otherwise the system reads it when chosen,
+            // and restarting the agent for nothing disturbs the user's own wallpaper.
+            guard installed || (slotChanged && isLumenSelected()) else { return }
             if isScreenLocked {
                 agentRestartPending = true
             } else {

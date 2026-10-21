@@ -45,11 +45,15 @@ struct MainWindowView: View {
         .background(Theme.background)
         .foregroundStyle(.white)
         .environment(\.colorScheme, .dark)
-        .frame(minWidth: 760, minHeight: 560)
-        .dropDestination(for: URL.self) { urls, _ in
-            Task { await model.importVideos(urls) }
-            return !urls.isEmpty
+        .overlay {
+            if model.isDropTargeted {
+                RoundedRectangle(cornerRadius: 10)
+                    .strokeBorder(Color.white.opacity(0.8), style: StrokeStyle(lineWidth: 3, dash: [10, 6]))
+                    .padding(6)
+                    .allowsHitTesting(false)
+            }
         }
+        .frame(minWidth: 760, minHeight: 560)
         .alert("Lumen", isPresented: Binding(
             get: { model.lastError != nil },
             set: { if !$0 { model.lastError = nil } }

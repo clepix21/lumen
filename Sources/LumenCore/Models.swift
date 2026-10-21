@@ -50,6 +50,8 @@ public struct Settings: Codable, Equatable, Sendable {
     public var lockScreenEnabled = false
     /// Once a day, ask GitHub whether a newer version exists.
     public var checkForUpdates = true
+    /// ⌃⌥⌘P / ⌃⌥⌘→ / ⌃⌥⌘← / ⌃⌥⌘M work from any app.
+    public var globalShortcuts = true
 
     public init() {}
 
@@ -64,6 +66,7 @@ public struct Settings: Codable, Equatable, Sendable {
         shuffle = try container.decodeIfPresent(Bool.self, forKey: .shuffle) ?? defaults.shuffle
         lockScreenEnabled = try container.decodeIfPresent(Bool.self, forKey: .lockScreenEnabled) ?? defaults.lockScreenEnabled
         checkForUpdates = try container.decodeIfPresent(Bool.self, forKey: .checkForUpdates) ?? defaults.checkForUpdates
+        globalShortcuts = try container.decodeIfPresent(Bool.self, forKey: .globalShortcuts) ?? defaults.globalShortcuts
     }
 }
 

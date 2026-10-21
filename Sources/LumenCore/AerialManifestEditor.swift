@@ -88,6 +88,37 @@ public struct AerialManifestEditor: Sendable {
         try write(manifest)
     }
 
+    /// Whether the slot is already `source` itself (same file on disk, as left by a hard link).
+    public func slotHolds(_ source: URL) -> Bool {
+        let fileManager = FileManager.default
+        guard let slot = try? fileManager.attributesOfItem(atPath: slotURL.path),
+              let file = try? fileManager.attributesOfItem(atPath: source.path) else { return false }
+        return (slot[.systemFileNumber] as? NSNumber) == (file[.systemFileNumber] as? NSNumber)
+            && (slot[.systemNumber] as? NSNumber) == (file[.systemNumber] as? NSNumber)
+    }
+
+    /// Atomically puts `source` in the slot, hard-linking when possible (no copy of a large video).
+    /// Returns `false` when the slot already held it.
+    @discardableResult
+    public func placeInSlot(_ source: URL) throws -> Bool {
+        guard !slotHolds(source) else { return false }
+        let fileManager = FileManager.default
+        try fileManager.createDirectory(at: slotURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let staging = slotURL.deletingLastPathComponent().appendingPathComponent(".lumen-staging.mov")
+        try? fileManager.removeItem(at: staging)
+        do {
+            try fileManager.linkItem(at: source, to: staging)
+        } catch {
+            try fileManager.copyItem(at: source, to: staging)
+        }
+        if fileManager.fileExists(atPath: slotURL.path) {
+            _ = try fileManager.replaceItemAt(slotURL, withItemAt: staging)
+        } else {
+            try fileManager.moveItem(at: staging, to: slotURL)
+        }
+        return true
+    }
+
     /// Removes only Lumen's entries, video slot and preview. The backup is kept as a safety net.
     public func uninstall() throws {
         var manifest = try readManifest()

@@ -89,6 +89,22 @@ import Testing
         #expect(second.layer?.sublayers?.isEmpty ?? true)
     }
 
+    @Test func loopingMutedVideoKeepsAudioOff() async throws {
+        let paths = try makeTempPaths()
+        let clip = paths.root.appendingPathComponent("sound.mp4")
+        try await TestVideoFactory.make(at: clip, seconds: 1, width: 128, height: 96, withAudio: true)
+
+        let player = WallpaperPlayer(hostView: NSView())
+        player.setMuted(true)
+        player.setPlaying(true)
+        player.load(url: clip, loop: true)
+        #expect(await waitUntil { player.audioTracksEnabled == [false] })
+
+        try await Task.sleep(nanoseconds: 2_500_000_000)
+
+        #expect(player.audioTracksEnabled == [false])
+    }
+
     @Test func unmutingReenablesAudio() async throws {
         let paths = try makeTempPaths()
         let clip = paths.root.appendingPathComponent("sound.mp4")

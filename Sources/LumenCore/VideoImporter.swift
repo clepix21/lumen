@@ -18,11 +18,14 @@ public enum ImportError: Error, Equatable {
 /// Copies videos into Lumen's storage and reads what the UI needs about them.
 public struct VideoImporter: Sendable {
     public let paths: LumenPaths
+    /// Shorter videos are rejected: they cannot loop meaningfully and can break playback.
+    public let minimumDuration: Double
 
     private static let chunkSize = 4 * 1024 * 1024
 
-    public init(paths: LumenPaths) {
+    public init(paths: LumenPaths, minimumDuration: Double = 0.1) {
         self.paths = paths
+        self.minimumDuration = minimumDuration
     }
 
     public func fileURL(for video: Video) -> URL {
@@ -39,7 +42,9 @@ public struct VideoImporter: Sendable {
         let sourceAsset = AVURLAsset(url: source)
         guard (try? await sourceAsset.load(.isPlayable)) == true,
               let tracks = try? await sourceAsset.loadTracks(withMediaType: .video),
-              !tracks.isEmpty else {
+              !tracks.isEmpty,
+              let sourceDuration = try? await sourceAsset.load(.duration).seconds,
+              sourceDuration.isFinite, sourceDuration >= minimumDuration else {
             throw ImportError.notPlayable
         }
 

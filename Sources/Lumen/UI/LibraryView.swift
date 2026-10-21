@@ -76,8 +76,8 @@ struct LibraryView: View {
                     Text(video.name).font(.system(size: 30, weight: .semibold))
                     Text(DisplayText.summary(for: video)).font(.system(size: 11)).opacity(0.7).padding(.bottom, 8)
                     HStack(spacing: 6) {
-                        PillButton(title: model.isPlaying ? "Pause" : "Lecture",
-                                   systemImage: model.isPlaying ? "pause.fill" : "play.fill",
+                        PillButton(title: model.userPaused ? "Lecture" : "Pause",
+                                   systemImage: model.userPaused ? "play.fill" : "pause.fill",
                                    prominent: true) { model.togglePause() }
                         PillButton(title: model.library.settings.isMuted ? "Son coupé" : "Son activé",
                                    systemImage: model.library.settings.isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill") {
@@ -132,7 +132,7 @@ struct LibraryView: View {
                     Button(playlist.name) { model.addVideo(video.id, toPlaylist: playlist.id) }
                 }
                 Divider()
-                Button("Nouvelle playlist") {
+                Button("Créer une playlist…") {
                     let id = model.createPlaylist(name: "Nouvelle playlist")
                     model.addVideo(video.id, toPlaylist: id)
                 }

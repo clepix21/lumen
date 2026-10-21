@@ -47,11 +47,14 @@ struct MenuBarView: View {
                 Button {
                     NSWorkspace.shared.open(update.pageURL)
                 } label: {
-                    Label("Mise à jour disponible : \(update.version)", systemImage: "arrow.down.circle.fill")
-                        .font(.system(size: 12, weight: .medium))
+                    Label {
+                        Text("Mise à jour disponible : \(update.version)")
+                    } icon: {
+                        Image(systemName: "arrow.down.circle.fill").foregroundStyle(Color.accentColor)
+                    }
+                    .font(.system(size: 12, weight: .semibold))
                 }
                 .buttonStyle(.plain)
-                .foregroundStyle(Color.accentColor)
                 Divider()
             }
 

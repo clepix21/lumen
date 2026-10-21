@@ -25,6 +25,10 @@ enum ThumbnailCache {
 struct ThumbnailTile: View {
     let url: URL?
     var isCurrent = false
+    /// When set, the video plays silently while the pointer rests on the tile.
+    var previewVideoURL: URL?
+    // Plain `State` value: the `@State` macro plugin is not available without Xcode.
+    private let isHovered = State(initialValue: false)
 
     var body: some View {
         Color.white.opacity(0.06)
@@ -33,6 +37,15 @@ struct ThumbnailTile: View {
                 if let url, let image = ThumbnailCache.image(at: url) {
                     Image(nsImage: image).resizable().scaledToFill()
                 }
+            }
+            .overlay {
+                if isHovered.wrappedValue, let previewVideoURL {
+                    HoverVideoPreview(url: previewVideoURL)
+                }
+            }
+            .onHover { hovering in
+                guard previewVideoURL != nil else { return }
+                isHovered.wrappedValue = hovering
             }
             .clipShape(RoundedRectangle(cornerRadius: Theme.tileRadius))
             .overlay {

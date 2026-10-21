@@ -35,7 +35,7 @@ struct SettingsView: View {
                 group("Système") {
                     toggle("Lancer au démarrage du Mac", \.launchAtLogin)
                     toggle("Raccourcis clavier globaux", \.globalShortcuts)
-                    Text("⌃⌥⌘P pause ou lecture · ⌃⌥⌘→ vidéo suivante · ⌃⌥⌘← vidéo précédente · ⌃⌥⌘M son")
+                    Text("⌃⌥⌘P pause ou lecture · ⌃⌥⌘→ vidéo suivante · ⌃⌥⌘← vidéo précédente · ⌃⌥⌘S son")
                         .font(.system(size: 11)).opacity(0.6)
                     toggle("Vérifier les mises à jour", \.checkForUpdates)
                     if let update = model.availableUpdate {

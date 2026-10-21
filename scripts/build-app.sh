@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Builds Lumen in release mode, assembles build/Lumen.app and ad-hoc signs it.
 # Usage: scripts/build-app.sh [--install]   (--install copies to ~/Applications)
+# The version comes from LUMEN_VERSION (default 0.1.0).
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -9,11 +10,12 @@ swift build -c release --arch arm64
 BIN_DIR="$(swift build -c release --arch arm64 --show-bin-path)"
 
 APP="build/Lumen.app"
+VERSION="${LUMEN_VERSION:-0.1.0}"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN_DIR/Lumen" "$APP/Contents/MacOS/Lumen"
 
-cat > "$APP/Contents/Info.plist" <<'PLIST'
+cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -29,7 +31,7 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>0.1.0</string>
+    <string>${VERSION}</string>
     <key>CFBundleVersion</key>
     <string>1</string>
     <key>LSMinimumSystemVersion</key>

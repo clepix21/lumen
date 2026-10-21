@@ -24,6 +24,14 @@ import Testing
         #expect(!PlaybackPolicy.shouldPlay(conditions, settings: Settings()))
     }
 
+    @Test func screenSaverPausesEvenWhenOcclusionPauseIsOff() {
+        var conditions = PlaybackConditions()
+        conditions.isScreenSaverRunning = true
+        var settings = Settings()
+        settings.pauseWhenOccluded = false
+        #expect(!PlaybackPolicy.shouldPlay(conditions, settings: settings))
+    }
+
     @Test func inactiveSessionPauses() {
         var conditions = PlaybackConditions()
         conditions.isSessionActive = false

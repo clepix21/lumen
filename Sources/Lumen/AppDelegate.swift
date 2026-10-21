@@ -30,8 +30,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         player.setMuted(true)
         player.load(url: url, loop: true)
         let monitor = SystemMonitor(window: window)
+        var settings = Settings()
+        settings.pauseWhenOccluded = ProcessInfo.processInfo.environment["LUMEN_DEMO_IGNORE_OCCLUSION"] == nil
         let apply: (PlaybackConditions) -> Void = { conditions in
-            let play = PlaybackPolicy.shouldPlay(conditions, settings: Settings())
+            let play = PlaybackPolicy.shouldPlay(conditions, settings: settings)
             NSLog("Lumen demo: %@ -> %@", String(describing: conditions), play ? "play" : "pause")
             player.setPlaying(play)
         }

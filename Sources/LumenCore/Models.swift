@@ -50,6 +50,18 @@ public struct Settings: Codable, Equatable, Sendable {
     public var lockScreenEnabled = false
 
     public init() {}
+
+    /// Missing keys (from an older version) fall back to their defaults.
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let defaults = Settings()
+        isMuted = try container.decodeIfPresent(Bool.self, forKey: .isMuted) ?? defaults.isMuted
+        launchAtLogin = try container.decodeIfPresent(Bool.self, forKey: .launchAtLogin) ?? defaults.launchAtLogin
+        pauseWhenOccluded = try container.decodeIfPresent(Bool.self, forKey: .pauseWhenOccluded) ?? defaults.pauseWhenOccluded
+        pauseOnBattery = try container.decodeIfPresent(Bool.self, forKey: .pauseOnBattery) ?? defaults.pauseOnBattery
+        shuffle = try container.decodeIfPresent(Bool.self, forKey: .shuffle) ?? defaults.shuffle
+        lockScreenEnabled = try container.decodeIfPresent(Bool.self, forKey: .lockScreenEnabled) ?? defaults.lockScreenEnabled
+    }
 }
 
 /// What the wallpaper is currently showing.
@@ -72,6 +84,15 @@ public struct Library: Codable, Equatable, Sendable {
         self.playlists = playlists
         self.selection = selection
         self.settings = settings
+    }
+
+    /// Missing keys (from an older version) fall back to empty values, so videos are never lost.
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        videos = try container.decodeIfPresent([Video].self, forKey: .videos) ?? []
+        playlists = try container.decodeIfPresent([Playlist].self, forKey: .playlists) ?? []
+        selection = try container.decodeIfPresent(Selection.self, forKey: .selection) ?? .none
+        settings = try container.decodeIfPresent(Settings.self, forKey: .settings) ?? Settings()
     }
 
     public func video(id: UUID) -> Video? {

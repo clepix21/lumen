@@ -46,6 +46,14 @@ xcode-select --install
 
 ## Installation
 
+### Télécharger l'app
+
+1. Télécharge le dernier `Lumen-x.y.z.dmg` dans les [Releases](https://github.com/clepix21/lumen/releases/latest).
+2. Ouvre-le et glisse **Lumen** dans **Applications**.
+3. Au premier lancement, macOS bloque l'app, car elle n'est pas signée par un développeur Apple. Ouvre **Réglages Système › Confidentialité et sécurité**, puis clique sur **Ouvrir quand même** en face de Lumen.
+
+### Compiler depuis les sources
+
 ```bash
 git clone https://github.com/clepix21/lumen.git
 ```
